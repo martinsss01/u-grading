@@ -9,24 +9,24 @@ def pg_enum(enum_cls: type[enum.Enum], name: str) -> SAEnum:
 
 
 class Semester(str, enum.Enum):
-    FALL = "fall"
-    SPRING = "spring"
+    FALL = "Otoño"
+    SPRING = "Primavera"
 
 
 class Role(str, enum.Enum):
-    TEACHER = "teacher"
-    TA = "ta"
-    STUDENT = "student"
+    TEACHER = "Profesor"
+    TA = "Ayudante"
+    STUDENT = "Estudiante"
 
 
 class AssignmentStatus(str, enum.Enum):
-    PENDING = "pending"
-    GRADING = "grading"
-    DONE = "done"
+    PENDING = "Pendiente"
+    GRADING = "En Calificación"
+    DONE = "Listo"
 
 
 class AssignmentType(str, enum.Enum):
-    HOMEWORK = "homework"
-    QUIZ = "quiz"
-    TEST = "test"
-    FINAL_EXAM = "final_exam"
+    HOMEWORK = "Tarea"
+    QUIZ = "Ejercicio"
+    TEST = "Control"
+    FINAL_EXAM = "Examen"

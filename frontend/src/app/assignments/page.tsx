@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 
-const ASSIGNMENT_TYPES = ["homework", "quiz", "test", "final_exam"] as const;
+const ASSIGNMENT_TYPES = ["Tarea", "Ejercicio", "Control", "Examen"] as const;
 type AssignmentType = (typeof ASSIGNMENT_TYPES)[number];
 
 type Section = {
@@ -41,7 +41,7 @@ export default function AssignmentsPage() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
 
   const [title, setTitle] = useState("");
-  const [type, setType] = useState<AssignmentType>("homework");
+  const [type, setType] = useState<AssignmentType>("Tarea");
   const [sectionId, setSectionId] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [rubric, setRubric] = useState("");
@@ -149,7 +149,7 @@ export default function AssignmentsPage() {
                 className="mt-1 w-full rounded-md bg-charcoal px-3 py-2 text-white outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-white/40"
               >
                 <option value="" disabled>
-                  Select a section
+                  Selecciona una sección
                 </option>
                 {sections.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -161,14 +161,14 @@ export default function AssignmentsPage() {
 
             <div>
               <label htmlFor="title" className="block text-sm font-medium text-white">
-                Title
+                Nombre de la evaluación
               </label>
               <input
                 id="title"
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Homework 3"
+                placeholder="Control 1, Tarea 2, etc."
                 className="mt-1 w-full rounded-md bg-charcoal px-3 py-2 text-white placeholder-white/40 outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-white/40"
               />
             </div>
@@ -176,7 +176,7 @@ export default function AssignmentsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="type" className="block text-sm font-medium text-white">
-                  Type
+                  Tipo de evaluación
                 </label>
                 <select
                   id="type"
@@ -186,7 +186,7 @@ export default function AssignmentsPage() {
                 >
                   {ASSIGNMENT_TYPES.map((t) => (
                     <option key={t} value={t}>
-                      {t.replace("_", " ")}
+                      {t}
                     </option>
                   ))}
                 </select>
@@ -194,7 +194,7 @@ export default function AssignmentsPage() {
 
               <div>
                 <label htmlFor="dueDate" className="block text-sm font-medium text-white">
-                  Due date
+                  Fecha
                 </label>
                 <input
                   id="dueDate"
@@ -208,27 +208,27 @@ export default function AssignmentsPage() {
 
             <div>
               <label htmlFor="rubric" className="block text-sm font-medium text-white">
-                Rubric
+                Temario
               </label>
               <textarea
                 id="rubric"
                 rows={3}
                 value={rubric}
                 onChange={(e) => setRubric(e.target.value)}
-                placeholder="Grading criteria for this assignment..."
+                placeholder="Criterios de calificación y contenidos para esta tarea, control o examen."
                 className="mt-1 w-full rounded-md bg-charcoal px-3 py-2 text-white placeholder-white/40 outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-white/40"
               />
             </div>
 
             <div>
               <div className="flex items-center justify-between">
-                <span className="block text-sm font-medium text-white">Fields (questions)</span>
+                <span className="block text-sm font-medium text-white">Preguntas</span>
                 <button
                   type="button"
                   onClick={addField}
                   className="text-sm font-medium text-white/80 underline hover:text-white"
                 >
-                  + Add field
+                  + Agregar pregunta
                 </button>
               </div>
 
@@ -239,7 +239,7 @@ export default function AssignmentsPage() {
                     <input
                       value={field.description}
                       onChange={(e) => updateField(i, { description: e.target.value })}
-                      placeholder="Question description"
+                      placeholder="Descripción de la pregunta"
                       className="flex-1 rounded-md bg-charcoal px-3 py-2 text-white placeholder-white/40 outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-white/40"
                     />
                     <input
@@ -271,20 +271,20 @@ export default function AssignmentsPage() {
               disabled={submitting}
               className="w-full rounded-md bg-espresso py-2 font-semibold text-white transition hover:bg-espresso/80 disabled:opacity-50"
             >
-              {submitting ? "Creating..." : "Create assignment"}
+              {submitting ? "Creando..." : "Crear evaluación"}
             </button>
           </form>
         </section>
 
         <section className="rounded-lg bg-charcoal p-8 shadow-lg">
-          <h2 className="text-xl font-bold text-white">Assignments</h2>
+          <h2 className="text-xl font-bold text-white">Evaluaciones</h2>
           <ul className="mt-4 space-y-3">
-            {assignments.length === 0 && <p className="text-sm text-white/60">None created yet.</p>}
+            {assignments.length === 0 && <p className="text-sm text-white/60">No hay evaluaciones creadas.</p>}
             {assignments.map((a) => (
               <li key={a.id} className="rounded-md bg-maroon p-4">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-white">{a.title}</span>
-                  <span className="text-xs uppercase text-white/60">{a.type.replace("_", " ")}</span>
+                  <span className="text-xs uppercase text-white/60">{a.type}</span>
                 </div>
                 <p className="mt-1 text-sm text-white/70">{a.questions.length} field(s)</p>
               </li>
