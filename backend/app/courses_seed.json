@@ -1,0 +1,432 @@
+[
+  {
+    "code": "MA1001",
+    "name": "Introducción al Cálculo",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "MA1101",
+    "name": "Introducción al Álgebra",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "FI1000",
+    "name": "Introducción a la Física Clásica",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "CC1000",
+    "name": "Herramientas Computacionales para Ingeniería y Ciencias",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "CD1100",
+    "name": "Desafíos de Innovación en Ingeniería y Ciencias",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "BT1211",
+    "name": "Aplicaciones de la Biología a la Ingeniería y Ciencias",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "MA1002",
+    "name": "Cálculo Diferencial e Integral",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "MA1102",
+    "name": "Álgebra Lineal",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "FI1100",
+    "name": "Introducción a la Física Moderna",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "CC1002",
+    "name": "Introducción a la Programación",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "CD1201",
+    "name": "Proyecto de Innovación en Ingeniería y Ciencias",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "MA2001",
+    "name": "Cálculo en Varias Variables",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "MA2601",
+    "name": "Ecuaciones Diferenciales Ordinarias",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "FI2003",
+    "name": "Métodos Experimentales",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "FI2001",
+    "name": "Mecánica",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "IQ2211",
+    "name": "Química",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "IN2201",
+    "name": "Economía",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "MA2002",
+    "name": "Cálculo Avanzado y Aplicaciones",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "FI2002",
+    "name": "Electromagnetismo",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "FI2004",
+    "name": "Termodinámica",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "CD2201",
+    "name": "Módulo Interdisciplinario",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "CC3001",
+    "name": "Algoritmos y Estructuras de Datos",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "CC3101",
+    "name": "Matemáticas Discretas para la Computación",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "CC3501",
+    "name": "Modelación y Computación Gráfica para Ingenieros",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "MA3403",
+    "name": "Probabilidades y Estadística",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "CC3002",
+    "name": "Metodologías de Diseño y Programación",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "CC3102",
+    "name": "Teoría de la Computación",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "CC3201",
+    "name": "Bases de Datos",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "CC3301",
+    "name": "Programación de Software de Sistemas",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "CC4102",
+    "name": "Diseño y Análisis de Algoritmos",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "CC4302",
+    "name": "Sistemas Operativos",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "CC4401",
+    "name": "Ingeniería de Software",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "CC5205",
+    "name": "Minería de Datos",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "CC4901",
+    "name": "Práctica Profesional I",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "CC4101",
+    "name": "Lenguajes de Programación",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "CC4303",
+    "name": "Redes",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "CC4402",
+    "name": "Formulación, Evaluación y Gestión de Proyectos",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "CC5601",
+    "name": "Núcleo Gestión para Ingenieros I",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "CC5602",
+    "name": "Núcleo Gestión para Ingenieros II",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "CC5901",
+    "name": "Práctica Profesional II",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "CC5402",
+    "name": "Proyecto de Software",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "CC6907",
+    "name": "Introducción al Trabajo de Título",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  },
+  {
+    "code": "CC6919",
+    "name": "Trabajo de Título",
+    "sections": [
+      {"semester": "Semester.SPRING", "year": 2026},
+      {"semester": "Semester.FALL", "year": 2026},
+      {"semester": "Semester.SPRING", "year": 2027},
+      {"semester": "Semester.FALL", "year": 2027}
+    ]
+  }
+]
