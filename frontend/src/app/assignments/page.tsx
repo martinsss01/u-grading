@@ -36,6 +36,23 @@ type QuestionField = {
 
 const emptyField: QuestionField = { description: "", maxPoints: "" };
 
+const DUE_DATE_PATTERN = /^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2}))?$/;
+
+function parseDueDate(value: string): Date | null {
+  const match = value.trim().match(DUE_DATE_PATTERN);
+  if (!match) return null;
+  const [, dayStr, monthStr, yearStr, hourStr = "00", minuteStr = "00"] = match;
+  const day = Number(dayStr);
+  const month = Number(monthStr);
+  const year = Number(yearStr);
+  const hour = Number(hourStr);
+  const minute = Number(minuteStr);
+
+  const date = new Date(year, month - 1, day, hour, minute);
+  const isRealDate = date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+  return isRealDate ? date : null;
+}
+
 export default function AssignmentsPage() {
   const [sections, setSections] = useState<Section[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -93,6 +110,16 @@ export default function AssignmentsPage() {
       return;
     }
 
+    let dueDateIso: string | null = null;
+    if (dueDate.trim() !== "") {
+      const parsed = parseDueDate(dueDate);
+      if (!parsed) {
+        setError("La fecha debe tener el formato dd/mm/aaaa (opcionalmente hh:mm).");
+        return;
+      }
+      dueDateIso = parsed.toISOString();
+    }
+
     setSubmitting(true);
     try {
       await api.post("/api/v1/assignments/", {
@@ -100,7 +127,7 @@ export default function AssignmentsPage() {
         title,
         type,
         rubric: rubric || null,
-        due_date: dueDate ? new Date(dueDate).toISOString() : null,
+        due_date: dueDateIso,
         questions: fields
           .filter((f) => f.description.trim() !== "")
           .map((f, i) => ({
@@ -126,7 +153,7 @@ export default function AssignmentsPage() {
     <main className="min-h-[calc(100vh-64px)] px-6 py-10">
       <div className="mx-auto grid max-w-5xl gap-8 md:grid-cols-2">
         <section className="rounded-lg bg-maroon p-8 shadow-lg">
-          <h1 className="text-2xl font-bold text-white">New assignment</h1>
+          <h1 className="text-2xl font-bold text-white">Nueva Evaluación</h1>
 
           {sections.length === 0 && (
             <p className="mt-3 rounded-md bg-charcoal p-3 text-sm text-white/80">
@@ -139,7 +166,7 @@ export default function AssignmentsPage() {
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div>
               <label htmlFor="section" className="block text-sm font-medium text-white">
-                Class section
+                Clase y sección
               </label>
               <select
                 id="section"
@@ -198,17 +225,21 @@ export default function AssignmentsPage() {
                 </label>
                 <input
                   id="dueDate"
-                  type="datetime-local"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="dd/mm/aaaa hh:mm"
+                  pattern="\d{2}/\d{2}/\d{4}(\s\d{2}:\d{2})?"
+                  title="Formato: dd/mm/aaaa o dd/mm/aaaa hh:mm"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
-                  className="mt-1 w-full rounded-md bg-charcoal px-3 py-2 text-white outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-white/40"
+                  className="mt-1 w-full rounded-md bg-charcoal px-3 py-2 text-white placeholder-white/40 outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-white/40"
                 />
               </div>
             </div>
 
             <div>
               <label htmlFor="rubric" className="block text-sm font-medium text-white">
-                Temario
+                Descripción y criterios de calificación
               </label>
               <textarea
                 id="rubric"
@@ -286,7 +317,7 @@ export default function AssignmentsPage() {
                   <span className="font-semibold text-white">{a.title}</span>
                   <span className="text-xs uppercase text-white/60">{a.type}</span>
                 </div>
-                <p className="mt-1 text-sm text-white/70">{a.questions.length} field(s)</p>
+                <p className="mt-1 text-sm text-white/70">Estado {a.status}</p>
               </li>
             ))}
           </ul>
