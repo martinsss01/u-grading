@@ -9,7 +9,7 @@ from sqlalchemy.orm import selectinload
 from app.db.session import get_db
 from app.models.assignment import Assignment, Question
 from app.models.section import Section, SectionMember
-from app.schemas.assignment import AssignmentCreate, AssignmentRead, CourseAssignments
+from app.schemas.assignment import AssignmentCreate, AssignmentDetail, AssignmentRead, CourseAssignments
 
 router = APIRouter()
 
@@ -44,6 +44,19 @@ async def list_student_assignments(user_id: uuid.UUID, db: AsyncSession = Depend
         grouped[cid].append(a)
 
     return [{"course": course_map[cid], "assignments": grouped[cid]} for cid in course_map]
+
+
+@router.get("/{assignment_id}", response_model=AssignmentDetail)
+async def get_assignment(assignment_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(Assignment)
+        .where(Assignment.id == assignment_id)
+        .options(
+            selectinload(Assignment.questions),
+            selectinload(Assignment.section).selectinload(Section.course),
+        )
+    )
+    return result.scalar_one()
 
 
 @router.post("/", response_model=AssignmentRead, status_code=201)

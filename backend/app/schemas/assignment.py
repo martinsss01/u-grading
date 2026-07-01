@@ -57,6 +57,29 @@ class SectionSummary(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class SectionWithCourse(BaseModel):
+    id: uuid.UUID
+    semester: Semester
+    year: int
+    course: CourseSummary
+
+    model_config = {"from_attributes": True}
+
+
+class AssignmentDetail(BaseModel):
+    id: uuid.UUID
+    title: str
+    type: AssignmentType
+    status: AssignmentStatus
+    rubric: str | None
+    due_date: datetime | None
+    created_at: datetime
+    questions: list[QuestionRead]
+    section: SectionWithCourse
+
+    model_config = {"from_attributes": True}
+
+
 class StudentAssignment(BaseModel):
     id: uuid.UUID
     title: str

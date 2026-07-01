@@ -24,9 +24,22 @@ type CourseGroup = {
   assignments: Assignment[];
 };
 
+const TYPE_ORDER = ["Tarea", "Ejercicio", "Control", "Examen"];
+
+function groupByType(assignments: Assignment[]): [string, Assignment[]][] {
+  const map = new Map<string, Assignment[]>();
+  for (const a of assignments) {
+    if (!map.has(a.type)) map.set(a.type, []);
+    map.get(a.type)!.push(a);
+  }
+  return [...map.entries()].sort(
+    ([a], [b]) => (TYPE_ORDER.indexOf(a) ?? 99) - (TYPE_ORDER.indexOf(b) ?? 99)
+  );
+}
+
 const STATUS_COLORS: Record<string, string> = {
   Pendiente: "bg-grey/30 text-lemigrey",
-  "En Calificación": "bg-red/20 text-red",
+  "En Calificación": "bg-yellow-500/20 text-yellow-400",
   Listo: "bg-darkgrey text-lemigrey",
 };
 
@@ -90,25 +103,39 @@ export default function StudentAssignmentsPage() {
               {assignments.length === 0 ? (
                 <p className="px-6 py-4 text-sm text-demigrey">Sin evaluaciones.</p>
               ) : (
-                <ul className="divide-y divide-grey/20">
-                  {assignments.map((a) => (
-                    <li key={a.id} className="flex items-center gap-4 px-6 py-4">
-                      <div className="flex-1">
-                        <p className="font-medium text-white">{a.title}</p>
-                        <p className="mt-0.5 text-xs text-demigrey">
-                          {a.section.semester} {a.section.year}
-                          {a.due_date ? ` · Entrega: ${formatDate(a.due_date)}` : ""}
-                        </p>
-                      </div>
-                      <span className="text-xs text-demigrey">{a.type}</span>
-                      <span
-                        className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[a.status] ?? "bg-grey/20 text-lemigrey"}`}
-                      >
-                        {a.status}
-                      </span>
-                    </li>
+                <div className="divide-y divide-grey/20">
+                  {groupByType(assignments).map(([type, items]) => (
+                    <div key={type}>
+                      <p className="px-6 pt-4 pb-2 text-xs font-semibold uppercase tracking-widest text-demigrey">
+                        {type}s
+                      </p>
+                      <ul>
+                        {items.map((a) => (
+                          <li key={a.id}>
+                            <button
+                              onClick={() => router.push(`/student-assignments/${a.id}`)}
+                              className="group flex w-full items-center gap-4 px-6 py-3 text-left transition-colors hover:bg-darkergrey/50"
+                            >
+                              <div className="flex-1">
+                                <p className="font-medium text-white group-hover:text-white">{a.title}</p>
+                                <p className="mt-0.5 text-xs text-demigrey">
+                                  {a.section.semester} {a.section.year}
+                                  {a.due_date ? ` · Entrega: ${formatDate(a.due_date)}` : ""}
+                                </p>
+                              </div>
+                              <span
+                                className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[a.status] ?? "bg-grey/20 text-lemigrey"}`}
+                              >
+                                {a.status}
+                              </span>
+                              <span className="text-demigrey transition-colors group-hover:text-white">→</span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   ))}
-                </ul>
+                </div>
               )}
             </section>
           ))}
