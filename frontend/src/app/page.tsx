@@ -17,9 +17,9 @@ export default function Home() {
 
   return (
     <main className="flex min-h-[calc(100vh-64px)] items-center justify-center">
-      <div className="w-full max-w-sm rounded-lg bg-maroon px-10 py-10 shadow-lg">
+      <div className="w-full max-w-sm rounded-lg bg-darkgrey px-10 py-10 shadow-lg">
         <h1 className="text-center text-3xl font-bold text-white">U-Grading</h1>
-        <p className="mt-1 text-center text-white/80">Ingrese su email y contraseña</p>
+        <p className="mt-1 text-center text-demigrey">Ingrese su email y contraseña</p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-4">
           <Field>
@@ -33,7 +33,7 @@ export default function Home() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@university.edu"
-              className="w-full rounded-md bg-charcoal px-3 py-2 text-white placeholder-white/40 outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-white/40"
+              className="w-full rounded-md bg-darkergrey px-3 py-2 text-white placeholder-demigrey outline-none ring-1 ring-grey/30 focus:ring-2 focus:ring-red/50"
             />
           </Field>
 
@@ -48,13 +48,13 @@ export default function Home() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full rounded-md bg-charcoal px-3 py-2 text-white placeholder-white/40 outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-white/40"
+              className="w-full rounded-md bg-darkergrey px-3 py-2 text-white placeholder-demigrey outline-none ring-1 ring-grey/30 focus:ring-2 focus:ring-red/50"
             />
           </Field>
 
           <Button
             type="submit"
-            className="w-full rounded-md bg-espresso py-2 font-semibold text-white hover:bg-espresso/80"
+            className="w-full rounded-md bg-red py-2 font-semibold text-white hover:bg-red/80"
           >
             Sign in
           </Button>
