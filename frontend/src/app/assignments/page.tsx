@@ -263,7 +263,7 @@ export default function AssignmentsPage() {
                   type="button"
                   variant="link"
                   onClick={addField}
-                  className="text-red/80 hover:text-red"
+                  className="text-white"
                 >
                   + Agregar pregunta
                 </Button>

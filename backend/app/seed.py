@@ -60,6 +60,10 @@ async def seed() -> None:
         for section in all_sections[:3]:
             db.add(SectionMember(section=section, user=student, role=Role.STUDENT))
 
+        ta = user_objects["ayudante@ugrading.cl"]
+        for section in all_sections[:3]:
+            db.add(SectionMember(section=section, user=ta, role=Role.TA))
+
         await db.commit()
 
     print(f"Seeded {len(_USERS)} user(s) and {len(courses)} course(s).")
