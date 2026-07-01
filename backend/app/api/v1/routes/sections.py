@@ -28,3 +28,14 @@ async def list_ta_sections(user_id: uuid.UUID, db: AsyncSession = Depends(get_db
         .options(selectinload(Section.course))
     )
     return result.scalars().all()
+
+
+@router.get("/teacher/{user_id}", response_model=list[SectionRead])
+async def list_teacher_sections(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(Section)
+        .join(Section.members)
+        .where(SectionMember.user_id == user_id, SectionMember.role == Role.TEACHER)
+        .options(selectinload(Section.course))
+    )
+    return result.scalars().all()

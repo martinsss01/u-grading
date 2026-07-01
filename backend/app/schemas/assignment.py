@@ -94,3 +94,11 @@ class StudentAssignment(BaseModel):
 class CourseAssignments(BaseModel):
     course: CourseSummary
     assignments: list[StudentAssignment]
+
+
+class AssignmentUpdate(BaseModel):
+    title: str | None = None
+    type: AssignmentType | None = None
+    rubric: str | None = None
+    due_date: datetime | None = None
+    questions: list[QuestionCreate] | None = None
