@@ -12,7 +12,7 @@ from app.core.security import hash_password
 from app.db.session import AsyncSessionLocal
 from app.models.course import Course
 from app.models.enums import Role, Semester
-from app.models.section import Section
+from app.models.section import Section, SectionMember
 from app.models.user import User
 
 _SEED_FILE = Path(__file__).parent / "courses_seed.json"
@@ -42,17 +42,23 @@ async def seed() -> None:
     pw_hash = hash_password("123")
 
     async with AsyncSessionLocal() as db:
+        user_objects = {}
         for u in _USERS:
-            db.add(User(name=u["name"], email=u["email"], role=u["role"], hashed_password=pw_hash))
+            user = User(name=u["name"], email=u["email"], role=u["role"], hashed_password=pw_hash)
+            db.add(user)
+            user_objects[u["email"]] = user
 
         courses = _load_courses()
+        all_sections: list[Section] = []
         for course_data in courses:
-            course = Course(
-                name=course_data["name"],
-                code=course_data["code"],
-                sections=[Section(**s) for s in course_data["sections"]],
-            )
+            sections = [Section(**s) for s in course_data["sections"]]
+            all_sections.extend(sections)
+            course = Course(name=course_data["name"], code=course_data["code"], sections=sections)
             db.add(course)
+
+        student = user_objects["estudiante@ugrading.cl"]
+        for section in all_sections[:3]:
+            db.add(SectionMember(section=section, user=student, role=Role.STUDENT))
 
         await db.commit()
 

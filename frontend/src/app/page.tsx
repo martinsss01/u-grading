@@ -23,7 +23,7 @@ export default function Home() {
       localStorage.setItem("user", JSON.stringify(data));
       router.push("/assignments");
     } catch {
-      setError("Email o contraseña incorrectos.");
+      setError("Email o contraseña equivocadas.");
     } finally {
       setLoading(false);
     }
@@ -46,7 +46,7 @@ export default function Home() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@university.edu"
+              placeholder="usuario@ugrading.cl"
               className="rounded-md bg-darkergrey text-white placeholder:text-demigrey focus-visible:border-red/50 focus-visible:ring-red/20"
             />
           </Field>
@@ -66,7 +66,11 @@ export default function Home() {
             />
           </Field>
 
-          {error && <p className="text-sm text-red/80">{error}</p>}
+          {error && (
+            <div className="rounded-md bg-whiteish px-4 py-2">
+              <p className="text-sm text-red">{error}</p>
+            </div>
+          )}
 
           <Button
             type="submit"

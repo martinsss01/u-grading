@@ -24,13 +24,13 @@ services:
 
   frontend:
     build: ./frontend
-    command: node_modules/.bin/next dev
+    command: node_modules/.bin/next dev -p 3001
     volumes:
       - ./frontend:/app
       - /app/node_modules
       - /app/.next
     ports:
-      - "3000:3000"
+      - "3001:3001"
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000
     depends_on:
