@@ -2,17 +2,31 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 
 export default function Home() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    router.push("/assignments");
+    setError(null);
+    setLoading(true);
+    try {
+      const { data } = await api.post("/api/v1/auth/login", { email, password });
+      localStorage.setItem("user", JSON.stringify(data));
+      router.push("/assignments");
+    } catch {
+      setError("Email o contraseña incorrectos.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -26,14 +40,14 @@ export default function Home() {
             <FieldLabel htmlFor="email" className="text-white">
               Email
             </FieldLabel>
-            <input
+            <Input
               id="email"
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@university.edu"
-              className="w-full rounded-md bg-darkergrey px-3 py-2 text-white placeholder-demigrey outline-none ring-1 ring-grey/30 focus:ring-2 focus:ring-red/50"
+              className="rounded-md bg-darkergrey text-white placeholder:text-demigrey focus-visible:border-red/50 focus-visible:ring-red/20"
             />
           </Field>
 
@@ -41,22 +55,25 @@ export default function Home() {
             <FieldLabel htmlFor="password" className="text-white">
               Contraseña
             </FieldLabel>
-            <input
+            <Input
               id="password"
               type="password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full rounded-md bg-darkergrey px-3 py-2 text-white placeholder-demigrey outline-none ring-1 ring-grey/30 focus:ring-2 focus:ring-red/50"
+              className="rounded-md bg-darkergrey text-white placeholder:text-demigrey focus-visible:border-red/50 focus-visible:ring-red/20"
             />
           </Field>
 
+          {error && <p className="text-sm text-red/80">{error}</p>}
+
           <Button
             type="submit"
-            className="w-full rounded-md bg-red py-2 font-semibold text-white hover:bg-red/80"
+            disabled={loading}
+            className="w-full rounded-md bg-red py-2 font-semibold text-white hover:bg-red/80 disabled:opacity-60"
           >
-            Sign in
+            {loading ? "Ingresando..." : "Ingresar"}
           </Button>
         </form>
       </div>

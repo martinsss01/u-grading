@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel, FieldTitle } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 const ASSIGNMENT_TYPES = ["Tarea", "Ejercicio", "Control", "Examen"] as const;
 type AssignmentType = (typeof ASSIGNMENT_TYPES)[number];
@@ -170,35 +173,31 @@ export default function AssignmentsPage() {
               <FieldLabel htmlFor="section" className="text-white">
                 Clase y sección
               </FieldLabel>
-              <select
-                id="section"
-                required
-                value={sectionId}
-                onChange={(e) => setSectionId(e.target.value)}
-                className="w-full rounded-md bg-darkergrey px-3 py-2 text-white outline-none ring-1 ring-grey/30 focus:ring-2 focus:ring-red/50"
-              >
-                <option value="" disabled>
-                  Selecciona una sección
-                </option>
-                {sections.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.course.code} · {s.semester} {s.year}
-                  </option>
-                ))}
-              </select>
+              <Select value={sectionId} onValueChange={(v) => setSectionId(v ?? "")}>
+                <SelectTrigger className="w-full rounded-md bg-darkergrey text-white focus-visible:border-red/50 focus-visible:ring-red/20">
+                  <SelectValue placeholder="Selecciona una sección" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sections.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.course.code} · {s.semester} {s.year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </Field>
 
             <Field>
               <FieldLabel htmlFor="title" className="text-white">
                 Nombre de la evaluación
               </FieldLabel>
-              <input
+              <Input
                 id="title"
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Control 1, Tarea 2, etc."
-                className="w-full rounded-md bg-darkergrey px-3 py-2 text-white placeholder-demigrey outline-none ring-1 ring-grey/30 focus:ring-2 focus:ring-red/50"
+                className="rounded-md bg-darkergrey text-white placeholder:text-demigrey focus-visible:border-red/50 focus-visible:ring-red/20"
               />
             </Field>
 
@@ -207,25 +206,25 @@ export default function AssignmentsPage() {
                 <FieldLabel htmlFor="type" className="text-white">
                   Tipo de evaluación
                 </FieldLabel>
-                <select
-                  id="type"
-                  value={type}
-                  onChange={(e) => setType(e.target.value as AssignmentType)}
-                  className="w-full rounded-md bg-darkergrey px-3 py-2 text-white outline-none ring-1 ring-grey/30 focus:ring-2 focus:ring-red/50"
-                >
-                  {ASSIGNMENT_TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
+                <Select value={type} onValueChange={(v) => setType(v as AssignmentType)}>
+                  <SelectTrigger className="w-full rounded-md bg-darkergrey text-white focus-visible:border-red/50 focus-visible:ring-red/20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ASSIGNMENT_TYPES.map((t) => (
+                      <SelectItem key={t} value={t}>
+                        {t}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </Field>
 
               <Field>
                 <FieldLabel htmlFor="dueDate" className="text-white">
                   Fecha
                 </FieldLabel>
-                <input
+                <Input
                   id="dueDate"
                   type="text"
                   inputMode="numeric"
@@ -234,7 +233,7 @@ export default function AssignmentsPage() {
                   title="Formato: dd/mm/aaaa o dd/mm/aaaa hh:mm"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
-                  className="w-full rounded-md bg-darkergrey px-3 py-2 text-white placeholder-demigrey outline-none ring-1 ring-grey/30 focus:ring-2 focus:ring-red/50"
+                  className="rounded-md bg-darkergrey text-white placeholder:text-demigrey focus-visible:border-red/50 focus-visible:ring-red/20"
                 />
               </Field>
             </div>
@@ -243,13 +242,12 @@ export default function AssignmentsPage() {
               <FieldLabel htmlFor="rubric" className="text-white">
                 Descripción y criterios de calificación
               </FieldLabel>
-              <textarea
+              <Textarea
                 id="rubric"
-                rows={3}
                 value={rubric}
                 onChange={(e) => setRubric(e.target.value)}
                 placeholder="Criterios de calificación y contenidos para esta tarea, control o examen."
-                className="w-full rounded-md bg-darkergrey px-3 py-2 text-white placeholder-demigrey outline-none ring-1 ring-grey/30 focus:ring-2 focus:ring-red/50"
+                className="rounded-md bg-darkergrey text-white placeholder:text-demigrey focus-visible:border-red/50 focus-visible:ring-red/20"
               />
             </Field>
 
@@ -270,20 +268,20 @@ export default function AssignmentsPage() {
                 {fields.map((field, i) => (
                   <div key={i} className="flex gap-2">
                     <span className="mt-2 w-5 text-sm text-demigrey">{i + 1}.</span>
-                    <input
+                    <Input
                       value={field.description}
                       onChange={(e) => updateField(i, { description: e.target.value })}
                       placeholder="Descripción de la pregunta"
-                      className="flex-1 rounded-md bg-darkergrey px-3 py-2 text-white placeholder-demigrey outline-none ring-1 ring-grey/30 focus:ring-2 focus:ring-red/50"
+                      className="flex-1 rounded-md bg-darkergrey text-white placeholder:text-demigrey focus-visible:border-red/50 focus-visible:ring-red/20"
                     />
-                    <input
+                    <Input
                       value={field.maxPoints}
                       onChange={(e) => updateField(i, { maxPoints: e.target.value })}
                       type="number"
                       min="0"
                       step="0.5"
                       placeholder="Pts"
-                      className="w-20 rounded-md bg-darkergrey px-3 py-2 text-white placeholder-demigrey outline-none ring-1 ring-grey/30 focus:ring-2 focus:ring-red/50"
+                      className="w-20 rounded-md bg-darkergrey text-white placeholder:text-demigrey focus-visible:border-red/50 focus-visible:ring-red/20"
                     />
                     <Button
                       type="button"
