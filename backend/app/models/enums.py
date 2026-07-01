@@ -14,6 +14,7 @@ class Semester(str, enum.Enum):
 
 
 class Role(str, enum.Enum):
+    ADMIN = "Administrador"
     TEACHER = "Profesor"
     TA = "Ayudante"
     STUDENT = "Estudiante"

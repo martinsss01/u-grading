@@ -1,7 +1,6 @@
-"""One-off script to seed courses and sections for local development.
+"""One-off script to seed courses, sections, and dev users for local development.
 
-Courses are loaded from courses_seed.json in the same directory. Run with:
-
+Run with:
     docker compose exec backend python -m app.seed
 """
 
@@ -9,10 +8,12 @@ import asyncio
 import json
 from pathlib import Path
 
+from app.core.security import hash_password
 from app.db.session import AsyncSessionLocal
 from app.models.course import Course
-from app.models.enums import Semester
+from app.models.enums import Role, Semester
 from app.models.section import Section
+from app.models.user import User
 
 _SEED_FILE = Path(__file__).parent / "courses_seed.json"
 
@@ -20,6 +21,13 @@ _SEMESTER_MAP = {
     "Semester.SPRING": Semester.SPRING,
     "Semester.FALL": Semester.FALL,
 }
+
+_USERS = [
+    {"name": "Admin",     "email": "admin@ugrading.cl",     "role": Role.ADMIN},
+    {"name": "Profesor",  "email": "profesor@ugrading.cl",  "role": Role.TEACHER},
+    {"name": "Ayudante",  "email": "ayudante@ugrading.cl",  "role": Role.TA},
+    {"name": "Estudiante","email": "estudiante@ugrading.cl","role": Role.STUDENT},
+]
 
 
 def _load_courses() -> list[dict]:
@@ -31,8 +39,13 @@ def _load_courses() -> list[dict]:
 
 
 async def seed() -> None:
-    courses = _load_courses()
+    pw_hash = hash_password("123")
+
     async with AsyncSessionLocal() as db:
+        for u in _USERS:
+            db.add(User(name=u["name"], email=u["email"], role=u["role"], hashed_password=pw_hash))
+
+        courses = _load_courses()
         for course_data in courses:
             course = Course(
                 name=course_data["name"],
@@ -40,8 +53,10 @@ async def seed() -> None:
                 sections=[Section(**s) for s in course_data["sections"]],
             )
             db.add(course)
+
         await db.commit()
-    print(f"Seeded {len(courses)} course(s).")
+
+    print(f"Seeded {len(_USERS)} user(s) and {len(courses)} course(s).")
 
 
 if __name__ == "__main__":
