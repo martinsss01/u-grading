@@ -175,7 +175,12 @@ export default function AssignmentsPage() {
               </FieldLabel>
               <Select value={sectionId} onValueChange={(v) => setSectionId(v ?? "")}>
                 <SelectTrigger className="w-full rounded-md bg-darkergrey text-white focus-visible:border-red/50 focus-visible:ring-red/20">
-                  <SelectValue placeholder="Selecciona una sección" />
+                  <SelectValue placeholder="Selecciona una sección">
+                    {(() => {
+                      const s = sections.find((sec) => sec.id === sectionId);
+                      return s ? `${s.course.name} (${s.course.code}) · ${s.semester} ${s.year}` : null;
+                    })()}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {sections.map((s) => (
