@@ -26,6 +26,13 @@ type CourseGroup = {
 
 const TYPE_ORDER = ["Tarea", "Ejercicio", "Control", "Examen"];
 
+const TYPE_PLURAL: Record<string, string> = {
+  Tarea: "Tareas",
+  Ejercicio: "Ejercicios",
+  Control: "Controles",
+  Examen: "Exámenes",
+};
+
 function groupByType(assignments: Assignment[]): [string, Assignment[]][] {
   const map = new Map<string, Assignment[]>();
   for (const a of assignments) {
@@ -107,7 +114,7 @@ export default function StudentAssignmentsPage() {
                   {groupByType(assignments).map(([type, items]) => (
                     <div key={type}>
                       <p className="px-6 pt-4 pb-2 text-xs font-semibold uppercase tracking-widest text-demigrey">
-                        {type}s
+                        {TYPE_PLURAL[type] ?? type}
                       </p>
                       <ul>
                         {items.map((a) => (

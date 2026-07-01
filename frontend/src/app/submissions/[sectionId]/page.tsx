@@ -37,6 +37,13 @@ type SectionSubmissions = {
 
 const TYPE_ORDER = ["Tarea", "Ejercicio", "Control", "Examen"];
 
+const TYPE_PLURAL: Record<string, string> = {
+  Tarea: "Tareas",
+  Ejercicio: "Ejercicios",
+  Control: "Controles",
+  Examen: "Exámenes",
+};
+
 function groupByType(assignments: Assignment[]): [string, Assignment[]][] {
   const map = new Map<string, Assignment[]>();
   for (const a of assignments) {
@@ -111,7 +118,7 @@ export default function SectionSubmissionsPage() {
               {groupByType(data.assignments).map(([type, assignments]) => (
                 <div key={type}>
                   <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-demigrey">
-                    {type}s
+                    {TYPE_PLURAL[type] ?? type}
                   </h2>
                   <div className="space-y-4">
                     {assignments.map((assignment) => (
