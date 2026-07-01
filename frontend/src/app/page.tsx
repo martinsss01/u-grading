@@ -21,7 +21,7 @@ export default function Home() {
     try {
       const { data } = await api.post("/api/v1/auth/login", { email, password });
       localStorage.setItem("user", JSON.stringify(data));
-      router.push("/assignments");
+      router.push(data.role === "Estudiante" ? "/student-assignments" : "/assignments");
     } catch {
       setError("Email o contraseña equivocadas.");
     } finally {
