@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Field, FieldLabel, FieldTitle } from "@/components/ui/field";
 
 const ASSIGNMENT_TYPES = ["Tarea", "Ejercicio", "Control", "Examen"] as const;
 type AssignmentType = (typeof ASSIGNMENT_TYPES)[number];
@@ -164,16 +166,16 @@ export default function AssignmentsPage() {
           )}
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-            <div>
-              <label htmlFor="section" className="block text-sm font-medium text-white">
+            <Field>
+              <FieldLabel htmlFor="section" className="text-white">
                 Clase y sección
-              </label>
+              </FieldLabel>
               <select
                 id="section"
                 required
                 value={sectionId}
                 onChange={(e) => setSectionId(e.target.value)}
-                className="mt-1 w-full rounded-md bg-charcoal px-3 py-2 text-white outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-white/40"
+                className="w-full rounded-md bg-charcoal px-3 py-2 text-white outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-white/40"
               >
                 <option value="" disabled>
                   Selecciona una sección
@@ -184,32 +186,32 @@ export default function AssignmentsPage() {
                   </option>
                 ))}
               </select>
-            </div>
+            </Field>
 
-            <div>
-              <label htmlFor="title" className="block text-sm font-medium text-white">
+            <Field>
+              <FieldLabel htmlFor="title" className="text-white">
                 Nombre de la evaluación
-              </label>
+              </FieldLabel>
               <input
                 id="title"
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Control 1, Tarea 2, etc."
-                className="mt-1 w-full rounded-md bg-charcoal px-3 py-2 text-white placeholder-white/40 outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-white/40"
+                className="w-full rounded-md bg-charcoal px-3 py-2 text-white placeholder-white/40 outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-white/40"
               />
-            </div>
+            </Field>
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="type" className="block text-sm font-medium text-white">
+              <Field>
+                <FieldLabel htmlFor="type" className="text-white">
                   Tipo de evaluación
-                </label>
+                </FieldLabel>
                 <select
                   id="type"
                   value={type}
                   onChange={(e) => setType(e.target.value as AssignmentType)}
-                  className="mt-1 w-full rounded-md bg-charcoal px-3 py-2 text-white outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-white/40"
+                  className="w-full rounded-md bg-charcoal px-3 py-2 text-white outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-white/40"
                 >
                   {ASSIGNMENT_TYPES.map((t) => (
                     <option key={t} value={t}>
@@ -217,12 +219,12 @@ export default function AssignmentsPage() {
                     </option>
                   ))}
                 </select>
-              </div>
+              </Field>
 
-              <div>
-                <label htmlFor="dueDate" className="block text-sm font-medium text-white">
+              <Field>
+                <FieldLabel htmlFor="dueDate" className="text-white">
                   Fecha
-                </label>
+                </FieldLabel>
                 <input
                   id="dueDate"
                   type="text"
@@ -232,35 +234,36 @@ export default function AssignmentsPage() {
                   title="Formato: dd/mm/aaaa o dd/mm/aaaa hh:mm"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
-                  className="mt-1 w-full rounded-md bg-charcoal px-3 py-2 text-white placeholder-white/40 outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-white/40"
+                  className="w-full rounded-md bg-charcoal px-3 py-2 text-white placeholder-white/40 outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-white/40"
                 />
-              </div>
+              </Field>
             </div>
 
-            <div>
-              <label htmlFor="rubric" className="block text-sm font-medium text-white">
+            <Field>
+              <FieldLabel htmlFor="rubric" className="text-white">
                 Descripción y criterios de calificación
-              </label>
+              </FieldLabel>
               <textarea
                 id="rubric"
                 rows={3}
                 value={rubric}
                 onChange={(e) => setRubric(e.target.value)}
                 placeholder="Criterios de calificación y contenidos para esta tarea, control o examen."
-                className="mt-1 w-full rounded-md bg-charcoal px-3 py-2 text-white placeholder-white/40 outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-white/40"
+                className="w-full rounded-md bg-charcoal px-3 py-2 text-white placeholder-white/40 outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-white/40"
               />
-            </div>
+            </Field>
 
-            <div>
+            <Field>
               <div className="flex items-center justify-between">
-                <span className="block text-sm font-medium text-white">Preguntas</span>
-                <button
+                <FieldTitle className="text-white">Preguntas</FieldTitle>
+                <Button
                   type="button"
+                  variant="link"
                   onClick={addField}
-                  className="text-sm font-medium text-white/80 underline hover:text-white"
+                  className="text-white/80 hover:text-white"
                 >
                   + Agregar pregunta
-                </button>
+                </Button>
               </div>
 
               <div className="mt-2 space-y-2">
@@ -282,28 +285,30 @@ export default function AssignmentsPage() {
                       placeholder="Pts"
                       className="w-20 rounded-md bg-charcoal px-3 py-2 text-white placeholder-white/40 outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-white/40"
                     />
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="icon-sm"
                       onClick={() => removeField(i)}
                       disabled={fields.length === 1}
-                      className="px-2 text-white/60 hover:text-white disabled:opacity-30"
+                      className="text-white/60 hover:text-white disabled:opacity-30"
                     >
                       ✕
-                    </button>
+                    </Button>
                   </div>
                 ))}
               </div>
-            </div>
+            </Field>
 
             {error && <p className="text-sm text-red-300">{error}</p>}
 
-            <button
+            <Button
               type="submit"
               disabled={submitting}
-              className="w-full rounded-md bg-espresso py-2 font-semibold text-white transition hover:bg-espresso/80 disabled:opacity-50"
+              className="w-full rounded-md bg-espresso py-2 font-semibold text-white hover:bg-espresso/80"
             >
               {submitting ? "Creando..." : "Crear evaluación"}
-            </button>
+            </Button>
           </form>
         </section>
 

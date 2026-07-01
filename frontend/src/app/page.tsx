@@ -3,13 +3,14 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Field, FieldLabel } from "@/components/ui/field";
 
 export default function Home() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  function handleSubmit(e: FormEvent) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     router.push("/assignments");
   }
@@ -21,10 +22,10 @@ export default function Home() {
         <p className="mt-1 text-center text-white/80">Ingrese su email y contraseña</p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-white">
+          <Field>
+            <FieldLabel htmlFor="email" className="text-white">
               Email
-            </label>
+            </FieldLabel>
             <input
               id="email"
               type="email"
@@ -32,14 +33,14 @@ export default function Home() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@university.edu"
-              className="mt-1 w-full rounded-md bg-charcoal px-3 py-2 text-white placeholder-white/40 outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-white/40"
+              className="w-full rounded-md bg-charcoal px-3 py-2 text-white placeholder-white/40 outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-white/40"
             />
-          </div>
+          </Field>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-white">
+          <Field>
+            <FieldLabel htmlFor="password" className="text-white">
               Contraseña
-            </label>
+            </FieldLabel>
             <input
               id="password"
               type="password"
@@ -47,16 +48,16 @@ export default function Home() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="mt-1 w-full rounded-md bg-charcoal px-3 py-2 text-white placeholder-white/40 outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-white/40"
+              className="w-full rounded-md bg-charcoal px-3 py-2 text-white placeholder-white/40 outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-white/40"
             />
-          </div>
+          </Field>
 
-          <button
+          <Button
             type="submit"
-            className="w-full rounded-md bg-espresso py-2 font-semibold text-white transition hover:bg-espresso/80"
+            className="w-full rounded-md bg-espresso py-2 font-semibold text-white hover:bg-espresso/80"
           >
             Sign in
-          </button>
+          </Button>
         </form>
       </div>
     </main>
