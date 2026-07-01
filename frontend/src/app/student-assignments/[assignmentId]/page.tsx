@@ -31,7 +31,7 @@ type Assignment = {
 const STATUS_COLORS: Record<string, string> = {
   Pendiente: "bg-grey/30 text-lemigrey",
   "En Calificación": "bg-yellow-500/20 text-yellow-400",
-  Listo: "bg-darkgrey text-lemigrey",
+  Listo: "bg-green-500/20 text-green-400",
 };
 
 function formatDate(iso: string | null) {
