@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import api from "@/lib/api";
 
@@ -51,6 +51,12 @@ export default function AssignmentDetailPage() {
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    // TODO: wire up actual upload once the endpoint is ready.
+    e.target.value = "";
+  }
 
   useEffect(() => {
     if (!localStorage.getItem("user")) {
@@ -90,11 +96,48 @@ export default function AssignmentDetailPage() {
             <div>
               <div className="flex items-start justify-between gap-4">
                 <h1 className="text-2xl font-bold text-white">{a.title}</h1>
-                <span
-                  className={`mt-1 shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[a.status] ?? "bg-grey/20 text-lemigrey"}`}
-                >
-                  {a.status}
-                </span>
+                <div className="flex shrink-0 items-center gap-3">
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[a.status] ?? "bg-grey/20 text-lemigrey"}`}
+                  >
+                    {a.status}
+                  </span>
+
+                  {a.status === "Pendiente" && (
+                    <>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="rounded-md bg-red px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red/80"
+                      >
+                        Subir archivo
+                      </button>
+                    </>
+                  )}
+
+                  {a.status === "En Calificación" && (
+                    <button
+                      disabled
+                      className="cursor-not-allowed rounded-md bg-grey/20 px-3 py-1.5 text-xs font-medium text-demigrey"
+                    >
+                      Subir archivo
+                    </button>
+                  )}
+
+                  {a.status === "Listo" && (
+                    <button
+                      // TODO: navigate to the correction-review view once it exists.
+                      className="rounded-md bg-green-500/20 px-3 py-1.5 text-xs font-medium text-green-400 transition-colors hover:bg-green-500/30"
+                    >
+                      Revisar corrección
+                    </button>
+                  )}
+                </div>
               </div>
               <p className="mt-1 text-sm text-demigrey">
                 {a.section.course.name} ({a.section.course.code}) · {a.section.semester} {a.section.year}
