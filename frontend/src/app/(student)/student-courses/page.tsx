@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
+import { courseCodeLabel } from "@/lib/course";
 import { SEMESTER } from "@/lib/semester";
 
 type Course = {
@@ -100,11 +101,11 @@ export default function StudentCoursesPage() {
                     }
                     className="group flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-darkergrey/50"
                   >
-                    <p className="font-medium text-white">{s.course.name}</p>
-                    <span className="flex items-center gap-3">
-                      <span className="text-sm text-demigrey">{s.course.code}</span>
-                      <span className="text-demigrey transition-colors group-hover:text-white">→</span>
-                    </span>
+                    <div>
+                      <p className="font-medium text-white">{s.course.name}</p>
+                      <p className="mt-0.5 text-xs text-demigrey">{courseCodeLabel(s.course)}</p>
+                    </div>
+                    <span className="text-demigrey transition-colors group-hover:text-white">→</span>
                   </button>
                 ))}
               </div>

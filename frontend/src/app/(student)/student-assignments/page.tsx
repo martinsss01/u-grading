@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import api from "@/lib/api";
+import { courseCodeLabel } from "@/lib/course";
 import { getCurrentSemester } from "@/lib/semester";
 
 type Section = {
@@ -146,9 +147,9 @@ function StudentAssignmentsContent() {
         <div className="space-y-6">
           {visibleGroups.map(({ course, assignments }) => (
             <section key={course.id} className="rounded-lg bg-darkgrey shadow-lg">
-              <div className="flex items-baseline gap-3 rounded-t-lg bg-darkergrey px-6 py-4">
+              <div className="rounded-t-lg bg-darkergrey px-6 py-4">
                 <h2 className="text-lg font-bold text-white">{course.name}</h2>
-                <span className="text-sm text-demigrey">{course.code}</span>
+                <p className="mt-0.5 text-sm text-demigrey">{courseCodeLabel(course)}</p>
               </div>
 
               {assignments.length === 0 ? (

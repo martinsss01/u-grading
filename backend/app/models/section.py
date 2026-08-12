@@ -1,7 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Integer, Uuid
+from sqlalchemy import ForeignKey, Integer, Uuid, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -16,7 +16,9 @@ if TYPE_CHECKING:
 class Section(Base):
     __tablename__ = "sections"
 
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, primary_key=True, default=uuid.uuid4, server_default=text("gen_random_uuid()")
+    )
     course_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("courses.id"))
     semester: Mapped[Semester] = mapped_column(pg_enum(Semester, "semester"))
     year: Mapped[int] = mapped_column(Integer)
@@ -29,7 +31,9 @@ class Section(Base):
 class SectionMember(Base):
     __tablename__ = "section_members"
 
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, primary_key=True, default=uuid.uuid4, server_default=text("gen_random_uuid()")
+    )
     section_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("sections.id"))
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
     role: Mapped[Role] = mapped_column(pg_enum(Role, "role"))

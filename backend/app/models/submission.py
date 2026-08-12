@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, String, Uuid
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, String, Uuid, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -15,7 +15,9 @@ if TYPE_CHECKING:
 class Submission(Base):
     __tablename__ = "submissions"
 
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, primary_key=True, default=uuid.uuid4, server_default=text("gen_random_uuid()")
+    )
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))  # anonymized to graders at the API layer
     assignment_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("assignments.id"))
     file_path: Mapped[str] = mapped_column(String)
@@ -29,7 +31,9 @@ class Submission(Base):
 class Answer(Base):
     __tablename__ = "answers"
 
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, primary_key=True, default=uuid.uuid4, server_default=text("gen_random_uuid()")
+    )
     submission_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("submissions.id"))
     question_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("questions.id"))
     file_path: Mapped[str | None] = mapped_column(String)

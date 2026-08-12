@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import api from "@/lib/api";
+import { courseCodeLabel } from "@/lib/course";
 import { getCurrentSemester } from "@/lib/semester";
 
 type Course = {
@@ -74,11 +75,16 @@ export function StudentSidebar() {
           <button
             key={c.id}
             onClick={() => router.push(`/student-assignments?courseId=${c.id}`)}
-            className={`w-full rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-darkgrey hover:text-white ${
-              activeCourseId === c.id ? "bg-darkgrey text-white" : "text-demigrey"
+            className={`group flex w-full flex-col rounded-md px-3 py-2 text-left transition-colors hover:bg-darkgrey ${
+              activeCourseId === c.id ? "bg-darkgrey" : ""
             }`}
           >
-            {c.name}
+            <span
+              className={`text-sm ${activeCourseId === c.id ? "text-white" : "text-demigrey"} group-hover:text-white`}
+            >
+              {c.name}
+            </span>
+            <span className="text-xs text-demigrey">{courseCodeLabel(c)}</span>
           </button>
         ))}
       </nav>
