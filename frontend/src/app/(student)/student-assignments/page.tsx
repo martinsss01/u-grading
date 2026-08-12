@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import api from "@/lib/api";
+import { getCurrentSemester } from "@/lib/semester";
 
 type Section = {
   id: string;
@@ -62,7 +63,20 @@ function formatDate(iso: string | null) {
 }
 
 export default function StudentAssignmentsPage() {
+  return (
+    <Suspense fallback={null}>
+      <StudentAssignmentsContent />
+    </Suspense>
+  );
+}
+
+function StudentAssignmentsContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const courseId = searchParams.get("courseId");
+  const sectionId = searchParams.get("sectionId");
+  const semester = searchParams.get("semester");
+  const year = searchParams.get("year");
   const [groups, setGroups] = useState<CourseGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -82,10 +96,40 @@ export default function StudentAssignmentsPage() {
       .finally(() => setLoading(false));
   }, [router]);
 
+  const current = getCurrentSemester();
+  const courseFiltered = courseId ? groups.filter((g) => g.course.id === courseId) : groups;
+  const visibleGroups = courseFiltered
+    .map((g) => ({
+      ...g,
+      assignments: sectionId
+        ? g.assignments.filter((a) => a.section.id === sectionId)
+        : g.assignments.filter(
+            (a) => a.section.semester === current.semester && a.section.year === current.year
+          ),
+    }))
+    // Only drop courses with nothing to show in the plain "current semester" view;
+    // an explicitly selected course/section keeps showing even if empty.
+    .filter((g) => courseId || g.assignments.length > 0);
+
   return (
     <main className="min-h-[calc(100vh-64px)] px-6 py-10">
       <div className="mx-auto max-w-3xl">
-        <h1 className="mb-8 text-2xl font-bold text-white">Mis Evaluaciones</h1>
+        <div className="mb-8 flex items-baseline gap-3">
+          <h1 className="text-2xl font-bold text-white">Mis Evaluaciones</h1>
+          {semester && year && (
+            <span className="text-sm text-demigrey">
+              {semester} {year}
+            </span>
+          )}
+          {courseId && (
+            <button
+              onClick={() => router.push("/student-assignments")}
+              className="text-sm text-demigrey transition-colors hover:text-white"
+            >
+              Ver todas
+            </button>
+          )}
+        </div>
 
         {loading && <p className="text-demigrey">Cargando...</p>}
 
@@ -95,12 +139,12 @@ export default function StudentAssignmentsPage() {
           </div>
         )}
 
-        {!loading && !error && groups.length === 0 && (
+        {!loading && !error && visibleGroups.length === 0 && (
           <p className="text-demigrey">No estás inscrito en ninguna sección con evaluaciones.</p>
         )}
 
         <div className="space-y-6">
-          {groups.map(({ course, assignments }) => (
+          {visibleGroups.map(({ course, assignments }) => (
             <section key={course.id} className="rounded-lg bg-darkgrey shadow-lg">
               <div className="flex items-baseline gap-3 rounded-t-lg bg-darkergrey px-6 py-4">
                 <h2 className="text-lg font-bold text-white">{course.name}</h2>

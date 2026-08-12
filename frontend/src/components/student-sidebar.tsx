@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import api from "@/lib/api";
 import { getCurrentSemester } from "@/lib/semester";
-
-const NAV_ITEMS = ["Calendario", "Mis Evaluaciones", "Mis Cursos"];
 
 type Course = {
   id: string;
@@ -20,6 +19,9 @@ type Section = {
 };
 
 export function StudentSidebar() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const activeCourseId = searchParams.get("courseId");
   const [courses, setCourses] = useState<Course[]>([]);
   const { semester, year } = getCurrentSemester();
 
@@ -33,27 +35,37 @@ export function StudentSidebar() {
       .then((res) => {
         const map = new Map<string, Course>();
         for (const s of res.data) {
+          if (s.semester !== semester || s.year !== year) continue;
           if (!map.has(s.course.id)) map.set(s.course.id, s.course);
         }
         setCourses([...map.values()]);
       })
       .catch(() => setCourses([]));
-  }, []);
+  }, [semester, year]);
 
   return (
     <aside className="w-56 shrink-0 border-r border-grey/30 bg-darkergrey px-4 py-6">
       <nav className="space-y-1">
-        {NAV_ITEMS.map((label) => (
-          <button
-            key={label}
-            className="w-full rounded-md px-3 py-2 text-left text-sm font-medium text-demigrey transition-colors hover:bg-darkgrey hover:text-white"
-          >
-            {label}
-          </button>
-        ))}
+        <button
+          className="w-full rounded-md px-3 py-2 text-left text-sm font-medium text-demigrey transition-colors hover:bg-darkgrey hover:text-white"
+        >
+          Calendario
+        </button>
+        <button
+          onClick={() => router.push("/student-assignments")}
+          className="w-full rounded-md px-3 py-2 text-left text-sm font-medium text-demigrey transition-colors hover:bg-darkgrey hover:text-white"
+        >
+          Mis Evaluaciones
+        </button>
+        <button
+          onClick={() => router.push("/student-courses")}
+          className="w-full rounded-md px-3 py-2 text-left text-sm font-medium text-demigrey transition-colors hover:bg-darkgrey hover:text-white"
+        >
+          Mis Cursos
+        </button>
       </nav>
 
-      <p className="mt-6 px-3 text-xs font-semibold uppercase tracking-widest text-demigrey">
+      <p className="mt-6 border-t border-grey/30 px-3 pt-4 text-sm font-semibold uppercase tracking-widest text-lightgrey">
         {semester} {year}
       </p>
 
@@ -61,7 +73,10 @@ export function StudentSidebar() {
         {courses.map((c) => (
           <button
             key={c.id}
-            className="w-full rounded-md px-3 py-2 text-left text-sm text-demigrey transition-colors hover:bg-darkgrey hover:text-white"
+            onClick={() => router.push(`/student-assignments?courseId=${c.id}`)}
+            className={`w-full rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-darkgrey hover:text-white ${
+              activeCourseId === c.id ? "bg-darkgrey text-white" : "text-demigrey"
+            }`}
           >
             {c.name}
           </button>
