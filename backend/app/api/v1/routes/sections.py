@@ -19,6 +19,17 @@ async def list_sections(db: AsyncSession = Depends(get_db)):
     return result.scalars().all()
 
 
+@router.get("/student/{user_id}", response_model=list[SectionRead])
+async def list_student_sections(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(Section)
+        .join(Section.members)
+        .where(SectionMember.user_id == user_id, SectionMember.role == Role.STUDENT)
+        .options(selectinload(Section.course))
+    )
+    return result.scalars().all()
+
+
 @router.get("/ta/{user_id}", response_model=list[SectionRead])
 async def list_ta_sections(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
