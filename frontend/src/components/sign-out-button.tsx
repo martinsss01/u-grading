@@ -1,14 +1,17 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 export function SignOutButton() {
   const router = useRouter();
+  const pathname = usePathname();
 
   function signOut() {
     localStorage.removeItem("user");
     router.push("/");
   }
+
+  if (pathname === "/") return null;
 
   return (
     <button

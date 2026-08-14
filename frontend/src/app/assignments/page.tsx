@@ -41,23 +41,13 @@ type QuestionField = { description: string; maxPoints: string };
 
 const emptyField: QuestionField = { description: "", maxPoints: "" };
 
-const DUE_DATE_PATTERN = /^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2}))?$/;
-
-function parseDueDate(value: string): Date | null {
-  const match = value.trim().match(DUE_DATE_PATTERN);
-  if (!match) return null;
-  const [, d, m, y, h = "00", min = "00"] = match;
-  const date = new Date(Number(y), Number(m) - 1, Number(d), Number(h), Number(min));
-  return date.getFullYear() === Number(y) && date.getMonth() === Number(m) - 1 && date.getDate() === Number(d)
-    ? date
-    : null;
-}
-
-function formatDueDateForInput(iso: string | null): string {
+// Converts an ISO due_date into the `yyyy-MM-ddThh:mm` format the native
+// datetime-local input expects, in the browser's local time.
+function isoToDatetimeLocal(iso: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 export default function AssignmentsPage() {
@@ -112,7 +102,7 @@ export default function AssignmentsPage() {
     setTitle(a.title);
     setType(a.type);
     setSectionId(a.section_id);
-    setDueDate(formatDueDateForInput(a.due_date));
+    setDueDate(isoToDatetimeLocal(a.due_date));
     setRubric(a.rubric ?? "");
     setFields(
       a.questions.length > 0
@@ -138,12 +128,7 @@ export default function AssignmentsPage() {
 
     if (!sectionId) { setError("Selecciona una sección primero."); return; }
 
-    let dueDateIso: string | null = null;
-    if (dueDate.trim()) {
-      const parsed = parseDueDate(dueDate);
-      if (!parsed) { setError("La fecha debe tener el formato dd/mm/aaaa (opcionalmente hh:mm)."); return; }
-      dueDateIso = parsed.toISOString();
-    }
+    const dueDateIso = dueDate ? new Date(dueDate).toISOString() : null;
 
     const questions = fields
       .filter((f) => f.description.trim())
@@ -264,12 +249,11 @@ export default function AssignmentsPage() {
                 <FieldLabel htmlFor="dueDate" className="text-white">Fecha de entrega</FieldLabel>
                 <Input
                   id="dueDate"
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="dd/mm/aaaa hh:mm"
+                  type="datetime-local"
+                  lang="es-CL"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
-                  className="rounded-md bg-darkergrey text-white placeholder:text-demigrey focus-visible:border-red/50 focus-visible:ring-red/20"
+                  className="rounded-md bg-darkergrey text-white placeholder:text-demigrey [color-scheme:dark] focus-visible:border-red/50 focus-visible:ring-red/20"
                 />
               </Field>
             </div>

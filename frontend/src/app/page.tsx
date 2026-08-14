@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import api from "@/lib/api";
@@ -35,8 +36,19 @@ export default function Home() {
   }
 
   return (
-    <main className="flex min-h-[calc(100vh-64px)] items-center justify-center">
-      <div className="w-full max-w-sm rounded-lg bg-darkgrey px-10 py-10 shadow-lg">
+    <main className="relative flex min-h-[calc(100vh-64px)] items-center justify-center overflow-hidden">
+      <Image
+        src="/images/facultad.jpg"
+        alt=""
+        fill
+        priority
+        aria-hidden="true"
+        className="scale-55 object-cover blur-sm"
+      />
+      <div className="absolute inset-0 bg-red/20 mix-blend-multiply" />
+      <div className="absolute inset-0 bg-black/40" />
+
+      <div className="relative z-10 w-full max-w-sm rounded-lg bg-darkgrey px-10 py-10 shadow-lg">
         <h1 className="text-center text-3xl font-bold text-white">U-Grading</h1>
         <p className="mt-1 text-center text-demigrey">Ingrese su email y contraseña</p>
 
