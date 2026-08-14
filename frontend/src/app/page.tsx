@@ -22,8 +22,9 @@ export default function Home() {
       const { data } = await api.post("/api/v1/auth/login", { email, password });
       localStorage.setItem("user", JSON.stringify(data));
       const dest =
-        data.role === "Estudiante" ? "/student-assignments" :
-        data.role === "Ayudante"   ? "/submissions" :
+        data.role === "Estudiante"    ? "/student-assignments" :
+        data.role === "Ayudante"      ? "/submissions" :
+        data.role === "Administrador" ? "/admin-sections" :
         "/assignments";
       router.push(dest);
     } catch {
