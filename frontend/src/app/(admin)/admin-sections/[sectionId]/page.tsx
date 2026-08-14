@@ -1,12 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { courseCodeLabel } from "@/lib/course";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RoleBadge } from "@/components/role-badge";
 
@@ -40,8 +47,7 @@ export default function AdminSectionDetailPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const [userSearch, setUserSearch] = useState("");
-  const [selectedUserId, setSelectedUserId] = useState("");
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [role, setRole] = useState<string>("Estudiante");
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
@@ -74,22 +80,15 @@ export default function AdminSectionDetailPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sectionId]);
 
-  const filteredUsers = useMemo(() => {
-    const q = userSearch.trim().toLowerCase();
-    if (!q) return users;
-    return users.filter((u) => u.name.toLowerCase().includes(q));
-  }, [users, userSearch]);
-
   async function handleAddMember(e: React.FormEvent) {
     e.preventDefault();
     setAddError(null);
-    if (!selectedUserId) { setAddError("Selecciona un usuario."); return; }
+    if (!selectedUser) { setAddError("Selecciona un usuario."); return; }
 
     setAdding(true);
     try {
-      await api.post(`/api/v1/sections/${sectionId}/members`, { user_id: selectedUserId, role });
-      setSelectedUserId("");
-      setUserSearch("");
+      await api.post(`/api/v1/sections/${sectionId}/members`, { user_id: selectedUser.id, role });
+      setSelectedUser(null);
       await loadData();
     } catch (err) {
       const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
@@ -159,37 +158,29 @@ export default function AdminSectionDetailPage() {
               <h2 className="text-xl font-bold text-white">Agregar miembro</h2>
               <form onSubmit={handleAddMember} className="mt-4 space-y-4">
                 <Field>
-                  <FieldLabel className="text-white">Buscar usuario</FieldLabel>
-                  <Input
-                    value={userSearch}
-                    onChange={(e) => setUserSearch(e.target.value)}
-                    placeholder="Buscar por nombre"
-                    className="rounded-md bg-darkergrey text-white placeholder:text-demigrey focus-visible:border-red/50 focus-visible:ring-red/20"
-                  />
-                </Field>
-
-                <Field>
                   <FieldLabel className="text-white">Usuario</FieldLabel>
-                  <Select value={selectedUserId} onValueChange={(v) => setSelectedUserId(v ?? "")}>
-                    <SelectTrigger className="w-full rounded-md bg-darkergrey text-white focus-visible:border-red/50 focus-visible:ring-red/20">
-                      <SelectValue placeholder="Selecciona un usuario">
-                        {(() => {
-                          const u = users.find((usr) => usr.id === selectedUserId);
-                          return u ? `${u.name} (${u.email})` : null;
-                        })()}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredUsers.map((u) => (
-                        <SelectItem key={u.id} value={u.id}>
-                          {u.name} ({u.email})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {filteredUsers.length === 0 && (
-                    <p className="text-xs text-demigrey">No hay usuarios que coincidan con la búsqueda.</p>
-                  )}
+                  <Combobox
+                    items={users}
+                    value={selectedUser}
+                    onValueChange={(u) => setSelectedUser(u)}
+                    itemToStringLabel={(u: User) => `${u.name} (${u.email})`}
+                    isItemEqualToValue={(a: User, b: User) => a.id === b.id}
+                  >
+                    <ComboboxInput
+                      placeholder="Buscar por nombre"
+                      className="w-full rounded-md bg-darkergrey text-white placeholder:text-demigrey focus-within:border-red/50 focus-within:ring-red/20"
+                    />
+                    <ComboboxContent>
+                      <ComboboxEmpty>No hay usuarios que coincidan con la búsqueda.</ComboboxEmpty>
+                      <ComboboxList>
+                        {(u: User) => (
+                          <ComboboxItem key={u.id} value={u}>
+                            {u.name} ({u.email})
+                          </ComboboxItem>
+                        )}
+                      </ComboboxList>
+                    </ComboboxContent>
+                  </Combobox>
                 </Field>
 
                 <Field>
