@@ -33,6 +33,10 @@ export default function AdminSectionsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // Drill-down navigation for the sections list: year -> semester -> sections.
+  const [drillYear, setDrillYear] = useState<number | null>(null);
+  const [drillSemester, setDrillSemester] = useState<string | null>(null);
+
   async function loadData() {
     const [sectionsRes, coursesRes] = await Promise.all([
       api.get<Section[]>("/api/v1/sections/"),
@@ -99,6 +103,8 @@ export default function AdminSectionsPage() {
       }
       resetForm();
       await loadData();
+      setDrillYear(yearNum);
+      setDrillSemester(semester);
     } catch {
       setError(editingId ? "No se pudo guardar la sección." : "No se pudo crear la sección.");
     } finally {
@@ -118,6 +124,17 @@ export default function AdminSectionsPage() {
     } finally {
       setDeleting(false);
     }
+  }
+
+  const years = [...new Set(sections.map((s) => s.year))].sort((a, b) => b - a);
+  const semestersForYear = (y: number) =>
+    SEMESTERS.filter((sem) => sections.some((s) => s.year === y && s.semester === sem));
+  const sectionsFor = (y: number, sem: string) =>
+    sections.filter((s) => s.year === y && s.semester === sem);
+
+  function drillBack() {
+    if (drillSemester !== null) setDrillSemester(null);
+    else setDrillYear(null);
   }
 
   return (
@@ -208,71 +225,120 @@ export default function AdminSectionsPage() {
           </form>
         </section>
 
-        {/* ── Sections list ── */}
+        {/* ── Sections list (year → semester → sections) ── */}
         <section className="rounded-lg bg-darkergrey p-8 shadow-lg">
-          <h2 className="text-xl font-bold text-white">Secciones</h2>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-white">Secciones</h2>
+              {drillYear !== null && (
+                <p className="mt-1 text-xs font-semibold uppercase tracking-widest text-demigrey">
+                  {drillYear}{drillSemester ? ` · ${drillSemester}` : ""}
+                </p>
+              )}
+            </div>
+            {drillYear !== null && (
+              <button onClick={drillBack} className="text-sm text-demigrey hover:text-white">
+                ← Volver
+              </button>
+            )}
+          </div>
 
           {loading && <p className="mt-4 text-sm text-demigrey">Cargando...</p>}
           {loadError && <p className="mt-4 text-sm text-red/80">{loadError}</p>}
 
-          <ul className="mt-4 space-y-3">
-            {!loading && sections.length === 0 && (
-              <p className="text-sm text-demigrey">No hay secciones creadas.</p>
-            )}
-            {sections.map((s) => {
-              const isConfirming = confirmDeleteId === s.id;
-              return (
-                <li key={s.id} className="rounded-md bg-darkgrey p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="truncate font-semibold text-white">{s.course.name}</p>
-                      <p className="mt-0.5 text-xs text-demigrey">
-                        {courseCodeLabel(s.course)} · {s.semester} {s.year}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <button
-                        onClick={() => router.push(`/admin-sections/${s.id}`)}
-                        className="text-xs text-demigrey hover:text-white"
-                      >
-                        Ver miembros
-                      </button>
-                      <button
-                        onClick={() => startEdit(s)}
-                        className="text-xs text-demigrey hover:text-white"
-                      >
-                        Editar
-                      </button>
-                      {isConfirming ? (
-                        <>
-                          <button
-                            onClick={() => handleDelete(s.id)}
-                            disabled={deleting}
-                            className="text-xs font-medium text-red hover:text-red/80 disabled:opacity-50"
-                          >
-                            {deleting ? "..." : "Confirmar"}
-                          </button>
-                          <button
-                            onClick={() => setConfirmDeleteId(null)}
-                            className="text-xs text-demigrey hover:text-white"
-                          >
-                            Cancelar
-                          </button>
-                        </>
-                      ) : (
+          {!loading && !loadError && drillYear === null && (
+            <div className="mt-4 space-y-2">
+              {years.length === 0 && (
+                <p className="text-sm text-demigrey">No hay secciones creadas.</p>
+              )}
+              {years.map((y) => (
+                <button
+                  key={y}
+                  onClick={() => setDrillYear(y)}
+                  className="group flex w-full items-center justify-between rounded-md bg-darkgrey px-4 py-3 text-left transition-colors hover:bg-darkgrey/70"
+                >
+                  <span className="font-semibold text-white">{y}</span>
+                  <span className="text-demigrey transition-colors group-hover:text-white">→</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {!loading && !loadError && drillYear !== null && drillSemester === null && (
+            <div className="mt-4 space-y-2">
+              {semestersForYear(drillYear).map((sem) => (
+                <button
+                  key={sem}
+                  onClick={() => setDrillSemester(sem)}
+                  className="group flex w-full items-center justify-between rounded-md bg-darkgrey px-4 py-3 text-left transition-colors hover:bg-darkgrey/70"
+                >
+                  <span className="font-semibold text-white">{sem}</span>
+                  <span className="text-demigrey transition-colors group-hover:text-white">→</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {!loading && !loadError && drillYear !== null && drillSemester !== null && (
+            <ul className="mt-4 space-y-3">
+              {sectionsFor(drillYear, drillSemester).length === 0 && (
+                <p className="text-sm text-demigrey">No hay secciones en este semestre.</p>
+              )}
+              {sectionsFor(drillYear, drillSemester).map((s) => {
+                const isConfirming = confirmDeleteId === s.id;
+                return (
+                  <li key={s.id} className="rounded-md bg-darkgrey p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-white">{s.course.name}</p>
+                        <p className="mt-0.5 text-xs text-demigrey">
+                          {courseCodeLabel(s.course)} · {s.semester} {s.year}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
                         <button
-                          onClick={() => setConfirmDeleteId(s.id)}
-                          className="text-xs text-demigrey hover:text-red"
+                          onClick={() => router.push(`/admin-sections/${s.id}`)}
+                          className="text-xs text-demigrey hover:text-white"
                         >
-                          Eliminar
+                          Ver miembros
                         </button>
-                      )}
+                        <button
+                          onClick={() => startEdit(s)}
+                          className="text-xs text-demigrey hover:text-white"
+                        >
+                          Editar
+                        </button>
+                        {isConfirming ? (
+                          <>
+                            <button
+                              onClick={() => handleDelete(s.id)}
+                              disabled={deleting}
+                              className="text-xs font-medium text-red hover:text-red/80 disabled:opacity-50"
+                            >
+                              {deleting ? "..." : "Confirmar"}
+                            </button>
+                            <button
+                              onClick={() => setConfirmDeleteId(null)}
+                              className="text-xs text-demigrey hover:text-white"
+                            >
+                              Cancelar
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmDeleteId(s.id)}
+                            className="text-xs text-demigrey hover:text-red"
+                          >
+                            Eliminar
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </section>
 
       </div>
