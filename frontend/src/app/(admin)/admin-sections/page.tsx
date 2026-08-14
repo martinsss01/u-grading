@@ -48,11 +48,7 @@ export default function AdminSectionsPage() {
   }
 
   useEffect(() => {
-    const raw = localStorage.getItem("user");
-    if (!raw) { router.push("/"); return; }
-    const user = JSON.parse(raw) as { role: string };
-    if (user.role !== "Administrador") { router.push("/"); return; }
-
+    // Role/session gating happens in the (admin) layout's RoleGuard.
     (async () => {
       try {
         await loadData();
@@ -62,7 +58,6 @@ export default function AdminSectionsPage() {
         setLoading(false);
       }
     })();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function resetForm() {

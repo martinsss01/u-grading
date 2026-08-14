@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
@@ -15,8 +14,6 @@ const ROLE_FILTER_ALL = "Todos";
 type User = { id: string; name: string; email: string; role: string; created_at: string };
 
 export default function AdminUsersPage() {
-  const router = useRouter();
-
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -45,14 +42,7 @@ export default function AdminUsersPage() {
     setUsers(res.data);
   }
 
-  useEffect(() => {
-    const raw = localStorage.getItem("user");
-    if (!raw) { router.push("/"); return; }
-    const current = JSON.parse(raw) as { role: string };
-    if (current.role !== "Administrador") { router.push("/"); return; }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
+  // Role/session gating happens in the (admin) layout's RoleGuard.
   useEffect(() => {
     const timeout = setTimeout(() => {
       loadUsers()

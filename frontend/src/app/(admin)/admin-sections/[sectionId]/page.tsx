@@ -63,11 +63,7 @@ export default function AdminSectionDetailPage() {
   }
 
   useEffect(() => {
-    const raw = localStorage.getItem("user");
-    if (!raw) { router.push("/"); return; }
-    const current = JSON.parse(raw) as { role: string };
-    if (current.role !== "Administrador") { router.push("/"); return; }
-
+    // Role/session gating happens in the (admin) layout's RoleGuard.
     (async () => {
       try {
         await loadData();
