@@ -11,6 +11,7 @@ def pg_enum(enum_cls: type[enum.Enum], name: str) -> SAEnum:
 class Semester(str, enum.Enum):
     FALL = "Otoño"
     SPRING = "Primavera"
+    SUMMER = "Verano"
 
 
 class Role(str, enum.Enum):

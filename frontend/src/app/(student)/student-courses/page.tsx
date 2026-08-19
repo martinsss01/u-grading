@@ -26,9 +26,10 @@ type SemesterGroup = {
   sections: Section[];
 };
 
-// Within a year, Primavera (Aug-Dec) comes after Otoño (Mar-Jul), so it's
-// listed first when sorting most-recent-first.
-const SEMESTER_ORDER = [SEMESTER.SPRING, SEMESTER.FALL];
+// Within a year, Verano (Dec-Jan) comes after Primavera (Aug-Nov), which
+// comes after Otoño (Mar-Jul), so Verano is listed first when sorting
+// most-recent-first.
+const SEMESTER_ORDER = [SEMESTER.SUMMER, SEMESTER.SPRING, SEMESTER.FALL];
 
 function groupBySemester(sections: Section[]): SemesterGroup[] {
   const map = new Map<string, SemesterGroup>();

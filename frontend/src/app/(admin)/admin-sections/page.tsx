@@ -10,7 +10,7 @@ import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const SEMESTERS = [SEMESTER.FALL, SEMESTER.SPRING] as const;
+const SEMESTERS = [SEMESTER.FALL, SEMESTER.SPRING, SEMESTER.SUMMER] as const;
 
 type Course = { id: string; name: string; code: string };
 type Section = { id: string; semester: string; year: number; course: Course };
