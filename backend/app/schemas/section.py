@@ -17,6 +17,7 @@ class SectionRead(BaseModel):
     id: uuid.UUID
     semester: Semester
     year: int
+    section_number: int
     course: CourseRead
 
     model_config = {"from_attributes": True}
@@ -54,6 +55,7 @@ class SectionDetail(BaseModel):
     id: uuid.UUID
     semester: Semester
     year: int
+    section_number: int
     course: CourseRead
     members: list[SectionMemberRead]
 
