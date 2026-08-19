@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/combobox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RoleBadge } from "@/components/role-badge";
+import { RoleIcon } from "@/components/role-icon";
 
 const ROLES = ["Administrador", "Profesor", "Ayudante", "Estudiante"] as const;
 
@@ -131,9 +132,12 @@ export default function AdminSectionDetailPage() {
                 )}
                 {section.members.map((m) => (
                   <li key={m.id} className="flex items-center justify-between gap-2 rounded-md bg-darkgrey p-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-white">{m.user.name}</p>
-                      <p className="truncate text-xs text-demigrey">{m.user.email}</p>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <RoleIcon role={m.role} className="size-8 shrink-0 object-contain" />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-white">{m.user.name}</p>
+                        <p className="truncate text-xs text-demigrey">{m.user.email}</p>
+                      </div>
                     </div>
                     <div className="flex shrink-0 items-center gap-3">
                       <RoleBadge role={m.role} />
