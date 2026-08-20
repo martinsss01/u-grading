@@ -3,6 +3,7 @@ import "./globals.css";
 import { Inter } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { SignOutButton } from "@/components/sign-out-button";
+import { UserBadge } from "@/components/user-badge";
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
@@ -17,7 +18,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <header className="flex items-center justify-between border-b border-grey/30 bg-darkergrey px-6 py-4">
           <span className="text-lg font-semibold text-white">U-Grading</span>
-          <SignOutButton />
+          <div className="flex items-center gap-4">
+            <UserBadge />
+            <SignOutButton />
+          </div>
         </header>
         {children}
       </body>
