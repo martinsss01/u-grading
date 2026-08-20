@@ -87,6 +87,7 @@ class StudentAssignment(BaseModel):
     status: AssignmentStatus
     due_date: datetime | None
     section: SectionSummary
+    grade: float | None = None
 
     model_config = {"from_attributes": True}
 

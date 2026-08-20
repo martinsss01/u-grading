@@ -2,7 +2,7 @@ import uuid
 from collections import defaultdict
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -10,7 +10,7 @@ from app.db.session import get_db
 from app.models.assignment import Assignment, Question
 from app.models.enums import Role
 from app.models.section import Section, SectionMember
-from app.models.submission import Submission
+from app.models.submission import Answer, Submission
 from app.schemas.assignment import AssignmentCreate, AssignmentDetail, AssignmentRead, AssignmentUpdate, CourseAssignments
 
 router = APIRouter()
@@ -37,13 +37,35 @@ async def list_student_assignments(user_id: uuid.UUID, db: AsyncSession = Depend
     result = await db.execute(stmt)
     assignments = result.scalars().all()
 
+    grade_map: dict[uuid.UUID, float] = {}
+    if assignments:
+        grade_stmt = (
+            select(Submission.assignment_id, func.avg(Answer.grade))
+            .join(Answer, Answer.submission_id == Submission.id)
+            .where(
+                Submission.user_id == user_id,
+                Submission.assignment_id.in_([a.id for a in assignments]),
+            )
+            .group_by(Submission.assignment_id)
+        )
+        grade_rows = await db.execute(grade_stmt)
+        grade_map = {assignment_id: avg_grade for assignment_id, avg_grade in grade_rows.all() if avg_grade is not None}
+
     grouped: dict[str, list] = defaultdict(list)
     course_map = {}
     for a in assignments:
         cid = str(a.section.course.id)
         if cid not in course_map:
             course_map[cid] = a.section.course
-        grouped[cid].append(a)
+        grouped[cid].append({
+            "id": a.id,
+            "title": a.title,
+            "type": a.type,
+            "status": a.status,
+            "due_date": a.due_date,
+            "section": a.section,
+            "grade": grade_map.get(a.id),
+        })
 
     return [{"course": course_map[cid], "assignments": grouped[cid]} for cid in course_map]
 

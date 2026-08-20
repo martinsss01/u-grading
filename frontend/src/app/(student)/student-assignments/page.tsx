@@ -19,6 +19,7 @@ type Assignment = {
   status: string;
   due_date: string | null;
   section: Section;
+  grade: number | null;
 };
 
 type CourseGroup = {
@@ -175,8 +176,11 @@ function StudentAssignmentsContent() {
                                   {a.due_date ? ` · Entrega: ${formatDate(a.due_date)}` : ""}
                                 </p>
                               </div>
+                              <span className="w-10 text-right text-sm text-white">
+                                {a.grade !== null ? a.grade.toFixed(1) : "—"}
+                              </span>
                               <span
-                                className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[a.status] ?? "bg-grey/20 text-lemigrey"}`}
+                                className={`w-28 shrink-0 rounded-full px-2.5 py-0.5 text-center text-xs font-medium ${STATUS_COLORS[a.status] ?? "bg-grey/20 text-lemigrey"}`}
                               >
                                 {a.status}
                               </span>
