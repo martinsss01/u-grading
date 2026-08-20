@@ -32,6 +32,7 @@ type SectionDetail = {
   id: string;
   semester: string;
   year: number;
+  section_number: number;
   course: Course;
   members: Member[];
 };
@@ -121,7 +122,7 @@ export default function AdminSectionDetailPage() {
           <>
             <h1 className="text-2xl font-bold text-white">{section.course.name}</h1>
             <p className="mt-1 text-sm text-demigrey">
-              {courseCodeLabel(section.course)} · {section.semester} {section.year}
+              {courseCodeLabel(section.course, section.section_number)} · {section.semester} {section.year}
             </p>
 
             <section className="mt-8 rounded-lg bg-darkergrey p-8 shadow-lg">

@@ -33,8 +33,11 @@ _USERS = [
 def _load_courses() -> list[dict]:
     data = json.loads(_SEED_FILE.read_text(encoding="utf-8"))
     for course in data:
+        # The seed data has exactly one section per (semester, year) tuple,
+        # so each one is simply section_number 1 in its own tuple.
         for section in course["sections"]:
             section["semester"] = _SEMESTER_MAP[section["semester"]]
+            section["section_number"] = 1
     return data
 
 

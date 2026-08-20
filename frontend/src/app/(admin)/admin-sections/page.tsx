@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 const SEMESTERS = [SEMESTER.FALL, SEMESTER.SPRING, SEMESTER.SUMMER] as const;
 
 type Course = { id: string; name: string; code: string };
-type Section = { id: string; semester: string; year: number; course: Course };
+type Section = { id: string; semester: string; year: number; section_number: number; course: Course };
 
 export default function AdminSectionsPage() {
   const router = useRouter();
@@ -287,7 +287,7 @@ export default function AdminSectionsPage() {
                       <div className="min-w-0">
                         <p className="truncate font-semibold text-white">{s.course.name}</p>
                         <p className="mt-0.5 text-xs text-demigrey">
-                          {courseCodeLabel(s.course)} · {s.semester} {s.year}
+                          {courseCodeLabel(s.course, s.section_number)} · {s.semester} {s.year}
                         </p>
                       </div>
                       <div className="flex shrink-0 items-center gap-2">

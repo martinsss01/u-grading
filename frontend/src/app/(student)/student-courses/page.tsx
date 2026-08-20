@@ -16,6 +16,7 @@ type Section = {
   id: string;
   semester: string;
   year: number;
+  section_number: number;
   course: Course;
 };
 
@@ -104,7 +105,7 @@ export default function StudentCoursesPage() {
                   >
                     <div>
                       <p className="font-medium text-white">{s.course.name}</p>
-                      <p className="mt-0.5 text-xs text-demigrey">{courseCodeLabel(s.course)}</p>
+                      <p className="mt-0.5 text-xs text-demigrey">{courseCodeLabel(s.course, s.section_number)}</p>
                     </div>
                     <span className="text-demigrey transition-colors group-hover:text-white">→</span>
                   </button>
