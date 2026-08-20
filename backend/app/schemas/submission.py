@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.models.enums import AssignmentType
 from app.schemas.section import SectionRead
@@ -10,7 +10,7 @@ from app.schemas.section import SectionRead
 class AnswerRead(BaseModel):
     id: uuid.UUID
     question_id: uuid.UUID
-    grade: float | None
+    grade: float | None = Field(default=None, ge=1.0, le=7.0)
     graded_at: datetime | None
 
     model_config = {"from_attributes": True}

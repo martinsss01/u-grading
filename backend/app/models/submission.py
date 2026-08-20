@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, String, Uuid, text
+from sqlalchemy import Boolean, CheckConstraint, DateTime, Float, ForeignKey, String, Uuid, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -30,6 +30,7 @@ class Submission(Base):
 
 class Answer(Base):
     __tablename__ = "answers"
+    __table_args__ = (CheckConstraint("grade >= 1 AND grade <= 7", name="ck_answers_grade_range"),)
 
     id: Mapped[uuid.UUID] = mapped_column(
         Uuid, primary_key=True, default=uuid.uuid4, server_default=text("gen_random_uuid()")

@@ -55,12 +55,12 @@ function groupByType(assignments: Assignment[]): [string, Assignment[]][] {
   );
 }
 
-function totalGrade(answers: Answer[]): string {
+function averageGrade(answers: Answer[]): string {
   if (answers.length === 0) return "—";
   const graded = answers.filter((a) => a.grade !== null);
   if (graded.length === 0) return "Sin calificar";
   const total = graded.reduce((sum, a) => sum + (a.grade ?? 0), 0);
-  return total.toFixed(1);
+  return (total / graded.length).toFixed(1);
 }
 
 export default function SectionSubmissionsPage() {
@@ -150,7 +150,7 @@ export default function SectionSubmissionsPage() {
                                   {sub.needs_checking ? "Por revisar" : "Revisado"}
                                 </span>
                                 <span className="w-20 text-right text-sm text-white">
-                                  {totalGrade(sub.answers)} pts
+                                  {averageGrade(sub.answers)}
                                 </span>
                               </li>
                             ))}
