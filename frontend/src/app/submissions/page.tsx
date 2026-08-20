@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { P } from "@/components/ui/p";
@@ -36,7 +37,12 @@ export default function SubmissionsPage() {
   return (
     <main className="min-h-[calc(100vh-64px)] px-6 py-10">
       <div className="mx-auto max-w-2xl">
-        <h1 className="mb-8 text-2xl font-bold text-white">Mis Clases</h1>
+        <div className="mb-8 flex items-center gap-2.5">
+          <span className="relative size-7 shrink-0">
+            <Image src="/images/TACourses.png" alt="" fill sizes="28px" quality={100} unoptimized className="object-contain" />
+          </span>
+          <h1 className="text-2xl font-bold text-white">Mis Ayudantías</h1>
+        </div>
 
         {loading && <P className="text-demigrey">Cargando...</P>}
 

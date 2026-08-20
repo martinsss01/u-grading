@@ -88,13 +88,6 @@ export default function SectionSubmissionsPage() {
   return (
     <main className="min-h-[calc(100vh-64px)] px-6 py-10">
       <div className="mx-auto max-w-3xl">
-        <button
-          onClick={() => router.back()}
-          className="mb-6 text-sm text-demigrey transition-colors hover:text-white"
-        >
-          ← Volver
-        </button>
-
         {loading && <P className="text-demigrey">Cargando...</P>}
 
         {error && (
@@ -105,18 +98,22 @@ export default function SectionSubmissionsPage() {
 
         {data && (
           <>
-            {/* Same shell as "Mis Evaluaciones" (icon + title) so this reads as
-                that section's evaluations appended below, not a separate page. */}
             <div className="mb-8 flex items-baseline gap-3">
               <div className="flex items-center gap-2.5">
                 <span className="relative size-7 shrink-0">
-                  <Image src="/images/Evaluations.png" alt="" fill sizes="28px" quality={100} unoptimized className="object-contain" />
+                  <Image src="/images/Ayudante.png" alt="" fill sizes="28px" quality={100} unoptimized className="object-contain" />
                 </span>
-                <h1 className="text-2xl font-bold text-white">Mis Evaluaciones</h1>
+                <h1 className="text-2xl font-bold text-white">Mis Ayudantías</h1>
               </div>
               <span className="text-sm text-demigrey">
                 {data.section.course.name} · {data.section.course.code} · {data.section.semester} {data.section.year}
               </span>
+              <button
+                onClick={() => router.push("/submissions")}
+                className="text-sm text-demigrey transition-colors hover:text-white"
+              >
+                Ver todas
+              </button>
             </div>
 
             {data.assignments.length === 0 && (
