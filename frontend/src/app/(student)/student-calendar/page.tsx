@@ -30,6 +30,12 @@ type CourseGroup = {
 
 type DueAssignment = Assignment & { courseName: string; courseCode: string };
 
+const STATUS_COLORS: Record<string, string> = {
+  Pendiente: "bg-grey/30 text-lemigrey",
+  "En Calificación": "bg-yellow-500/20 text-yellow-400",
+  Listo: "bg-green-500/20 text-green-400",
+};
+
 const WEEKDAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
 const MONTH_NAMES = [
@@ -225,7 +231,14 @@ export default function StudentCalendarPage() {
                         onClick={() => router.push(`/student-assignments/${a.id}`)}
                         className="h-auto w-full flex-col items-start rounded-md bg-darkergrey px-3 py-2 text-left hover:bg-darkergrey/70"
                       >
-                        <P className="w-full truncate text-sm font-medium text-white">{a.title}</P>
+                        <div className="flex w-full items-center gap-2">
+                          <P className="min-w-0 flex-1 truncate text-sm font-medium text-white">{a.title}</P>
+                          <span
+                            className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS_COLORS[a.status] ?? "bg-grey/20 text-lemigrey"}`}
+                          >
+                            {a.status}
+                          </span>
+                        </div>
                         <P className="w-full truncate text-xs text-demigrey">
                           {a.courseCode} - {a.courseName}
                         </P>
