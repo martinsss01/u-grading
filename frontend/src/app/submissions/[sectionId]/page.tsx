@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useRouter, useParams } from "next/navigation";
 import api from "@/lib/api";
 import { P } from "@/components/ui/p";
@@ -88,7 +89,7 @@ export default function SectionSubmissionsPage() {
     <main className="min-h-[calc(100vh-64px)] px-6 py-10">
       <div className="mx-auto max-w-3xl">
         <button
-          onClick={() => router.push("/submissions")}
+          onClick={() => router.back()}
           className="mb-6 text-sm text-demigrey transition-colors hover:text-white"
         >
           ← Volver
@@ -104,11 +105,18 @@ export default function SectionSubmissionsPage() {
 
         {data && (
           <>
-            <div className="mb-8">
-              <h1 className="text-2xl font-bold text-white">{data.section.course.name}</h1>
-              <P className="mt-1 text-sm text-demigrey">
-                {data.section.course.code} · {data.section.semester} {data.section.year}
-              </P>
+            {/* Same shell as "Mis Evaluaciones" (icon + title) so this reads as
+                that section's evaluations appended below, not a separate page. */}
+            <div className="mb-8 flex items-baseline gap-3">
+              <div className="flex items-center gap-2.5">
+                <span className="relative size-7 shrink-0">
+                  <Image src="/images/Evaluations.png" alt="" fill sizes="28px" quality={100} unoptimized className="object-contain" />
+                </span>
+                <h1 className="text-2xl font-bold text-white">Mis Evaluaciones</h1>
+              </div>
+              <span className="text-sm text-demigrey">
+                {data.section.course.name} · {data.section.course.code} · {data.section.semester} {data.section.year}
+              </span>
             </div>
 
             {data.assignments.length === 0 && (

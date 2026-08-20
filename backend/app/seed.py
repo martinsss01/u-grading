@@ -67,6 +67,13 @@ async def seed() -> None:
         for section in all_sections[:3]:
             db.add(SectionMember(section=section, user=ta, role=Role.TA))
 
+        # Give the demo student a couple of TA memberships in other courses'
+        # current-semester sections, so the (student) sidebar has a real
+        # example of an account that is a student in some sections and a TA
+        # in others (SectionMember.role is per-section, not global).
+        for section in (all_sections[4], all_sections[8]):
+            db.add(SectionMember(section=section, user=student, role=Role.TA))
+
         teacher = user_objects["profesor@ugrading.cl"]
         for section in all_sections[:3]:
             db.add(SectionMember(section=section, user=teacher, role=Role.TEACHER))
