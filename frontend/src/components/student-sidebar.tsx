@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import api from "@/lib/api";
+import { RoleIcon } from "@/components/role-icon";
 import { courseCodeLabel } from "@/lib/course";
 import { getCurrentSemester } from "@/lib/semester";
 
@@ -25,12 +26,18 @@ export function StudentSidebar() {
   const searchParams = useSearchParams();
   const activeCourseId = searchParams.get("courseId");
   const [courses, setCourses] = useState<Course[]>([]);
+  const [role, setRole] = useState<string>("Estudiante");
   const { semester, year } = getCurrentSemester();
 
   useEffect(() => {
     const raw = localStorage.getItem("user");
     if (!raw) return;
-    const user = JSON.parse(raw) as { id: string };
+    const user = JSON.parse(raw) as { id: string; role?: string };
+    // One-shot read of the logged-in user's role on mount, not a value derived
+    // from render output — the cascading-render concern the rule guards against
+    // doesn't apply here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (user.role) setRole(user.role);
 
     api
       .get<Section[]>(`/api/v1/sections/student/${user.id}`)
@@ -85,16 +92,19 @@ export function StudentSidebar() {
           <button
             key={c.id}
             onClick={() => router.push(`/student-assignments?courseId=${c.id}`)}
-            className={`group flex w-full flex-col rounded-md px-3 py-2 text-left transition-colors hover:bg-darkgrey ${
+            className={`group flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left transition-colors hover:bg-darkgrey ${
               activeCourseId === c.id ? "bg-darkgrey" : ""
             }`}
           >
-            <span
-              className={`text-sm ${activeCourseId === c.id ? "text-white" : "text-demigrey"} group-hover:text-white`}
-            >
-              {c.name}
-            </span>
-            <span className="text-xs text-demigrey">{courseCodeLabel(c)}</span>
+            <RoleIcon role={role} className="size-6 shrink-0 object-contain" />
+            <div className="flex flex-col">
+              <span
+                className={`text-sm ${activeCourseId === c.id ? "text-white" : "text-demigrey"} group-hover:text-white`}
+              >
+                {c.name}
+              </span>
+              <span className="text-xs text-demigrey">{courseCodeLabel(c)}</span>
+            </div>
           </button>
         ))}
       </nav>
