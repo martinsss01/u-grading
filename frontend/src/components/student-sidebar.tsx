@@ -67,11 +67,27 @@ export function StudentSidebar() {
 
   return (
     <aside className="w-56 shrink-0 border-r border-grey/30 bg-darkergrey px-4 py-6">
+      {/* Only shown to accounts with at least one TA membership; links to the
+          "Mis Clases" overview of every section they TA for. */}
+      {taSections.length > 0 && (
+        <nav className="space-y-1">
+          <button
+            onClick={() => router.push("/submissions")}
+            className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium text-demigrey transition-colors hover:bg-darkgrey hover:text-white"
+          >
+            <span className="relative size-7 shrink-0">
+              <Image src="/images/TACourses.png" alt="" fill sizes="28px" quality={100} unoptimized className="object-contain" />
+            </span>
+            Mis Ayudantías
+          </button>
+        </nav>
+      )}
+
       {/* The student-only pages these link to are gated by global role, so an
           account that is a TA only (global role Ayudante, e.g. reached here
           straight from /submissions) would just 404 on them — hide them. */}
       {globalRole === "Estudiante" && (
-        <nav className="space-y-1">
+        <nav className="mt-1 space-y-1">
           <button
             onClick={() => router.push("/student-calendar")}
             className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium text-demigrey transition-colors hover:bg-darkgrey hover:text-white"
