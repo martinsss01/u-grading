@@ -106,7 +106,7 @@ export default function SectionSubmissionsPage() {
                 <h1 className="text-2xl font-bold text-white">Mis Ayudantías</h1>
               </div>
               <span className="text-sm text-demigrey">
-                {data.section.course.name} · {data.section.course.code} · {data.section.semester} {data.section.year}
+                {data.section.course.code} · {data.section.semester} {data.section.year}
               </span>
               <button
                 onClick={() => router.push("/submissions")}
