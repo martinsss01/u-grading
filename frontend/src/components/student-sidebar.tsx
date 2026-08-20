@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import api from "@/lib/api";
+import { P } from "@/components/ui/p";
 import { RoleIcon } from "@/components/role-icon";
 import { courseCodeLabel } from "@/lib/course";
 import { getCurrentSemester } from "@/lib/semester";
@@ -84,9 +85,9 @@ export function StudentSidebar() {
         </button>
       </nav>
 
-      <p className="mt-6 border-t border-grey/30 px-3 pt-4 text-sm font-semibold uppercase tracking-widest text-lightgrey">
+      <P className="mt-6 border-t border-grey/30 px-3 pt-4 text-sm font-semibold uppercase tracking-widest text-lightgrey">
         {semester} {year}
-      </p>
+      </P>
 
       <nav className="mt-2 space-y-1">
         {courses.map((c) => (

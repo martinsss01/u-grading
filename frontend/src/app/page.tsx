@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { P } from "@/components/ui/p";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 
@@ -50,7 +51,7 @@ export default function Home() {
 
       <div className="relative z-10 w-full max-w-sm rounded-lg bg-darkgrey px-10 py-10 shadow-lg">
         <h1 className="text-center text-3xl font-bold text-white">U-Grading</h1>
-        <p className="mt-1 text-center text-demigrey">Ingrese su email y contraseña</p>
+        <P className="mt-1 text-center text-demigrey">Ingrese su email y contraseña</P>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-4">
           <Field>
@@ -85,7 +86,7 @@ export default function Home() {
 
           {error && (
             <div className="rounded-md bg-whiteish px-4 py-2">
-              <p className="text-sm text-red">{error}</p>
+              <P className="text-sm text-red">{error}</P>
             </div>
           )}
 

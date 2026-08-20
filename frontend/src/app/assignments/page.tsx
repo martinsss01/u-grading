@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { P } from "@/components/ui/p";
 import { Field, FieldLabel, FieldTitle } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -190,10 +191,10 @@ export default function AssignmentsPage() {
           </div>
 
           {sections.length === 0 && (
-            <p className="mt-3 rounded-md bg-darkergrey p-3 text-sm text-demigrey">
+            <P className="mt-3 rounded-md bg-darkergrey p-3 text-sm text-demigrey">
               No tienes secciones asignadas. Ejecuta{" "}
               <code className="rounded bg-black/30 px-1 text-lightgrey">docker compose exec backend python -m app.seed</code>.
-            </p>
+            </P>
           )}
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
@@ -303,7 +304,7 @@ export default function AssignmentsPage() {
               </div>
             </Field>
 
-            {error && <p className="text-sm text-red/80">{error}</p>}
+            {error && <P className="text-sm text-red/80">{error}</P>}
 
             <Button
               type="submit"
@@ -322,7 +323,7 @@ export default function AssignmentsPage() {
           <h2 className="text-xl font-bold text-white">Evaluaciones</h2>
           <ul className="mt-4 space-y-3">
             {assignments.length === 0 && (
-              <p className="text-sm text-demigrey">No hay evaluaciones creadas.</p>
+              <P className="text-sm text-demigrey">No hay evaluaciones creadas.</P>
             )}
             {assignments.map((a) => {
               const section = sections.find((s) => s.id === a.section_id);
@@ -331,11 +332,11 @@ export default function AssignmentsPage() {
                 <li key={a.id} className="rounded-md bg-darkgrey p-4">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="truncate font-semibold text-white">{a.title}</p>
-                      <p className="mt-0.5 text-xs text-demigrey">
+                      <P className="truncate font-semibold text-white">{a.title}</P>
+                      <P className="mt-0.5 text-xs text-demigrey">
                         {a.type}
                         {section ? ` · ${section.course.code} ${section.semester} ${section.year}` : ""}
-                      </p>
+                      </P>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                       <button
@@ -370,7 +371,7 @@ export default function AssignmentsPage() {
                       )}
                     </div>
                   </div>
-                  <p className="mt-2 text-xs text-demigrey">Estado: {a.status}</p>
+                  <P className="mt-2 text-xs text-demigrey">Estado: {a.status}</P>
                 </li>
               );
             })}

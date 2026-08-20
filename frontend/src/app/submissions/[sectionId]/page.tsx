@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import api from "@/lib/api";
+import { P } from "@/components/ui/p";
 
 type Answer = {
   id: string;
@@ -93,11 +94,11 @@ export default function SectionSubmissionsPage() {
           ← Volver
         </button>
 
-        {loading && <p className="text-demigrey">Cargando...</p>}
+        {loading && <P className="text-demigrey">Cargando...</P>}
 
         {error && (
           <div className="rounded-md bg-whiteish px-4 py-2">
-            <p className="text-sm text-red">{error}</p>
+            <P className="text-sm text-red">{error}</P>
           </div>
         )}
 
@@ -105,13 +106,13 @@ export default function SectionSubmissionsPage() {
           <>
             <div className="mb-8">
               <h1 className="text-2xl font-bold text-white">{data.section.course.name}</h1>
-              <p className="mt-1 text-sm text-demigrey">
+              <P className="mt-1 text-sm text-demigrey">
                 {data.section.course.code} · {data.section.semester} {data.section.year}
-              </p>
+              </P>
             </div>
 
             {data.assignments.length === 0 && (
-              <p className="text-demigrey">No hay evaluaciones en esta sección.</p>
+              <P className="text-demigrey">No hay evaluaciones en esta sección.</P>
             )}
 
             <div className="space-y-10">
@@ -131,14 +132,14 @@ export default function SectionSubmissionsPage() {
                         </div>
 
                         {assignment.submissions.length === 0 ? (
-                          <p className="px-6 py-4 text-sm text-demigrey">Sin entregas.</p>
+                          <P className="px-6 py-4 text-sm text-demigrey">Sin entregas.</P>
                         ) : (
                           <ul className="divide-y divide-grey/20">
                             {assignment.submissions.map((sub, idx) => (
                               <li key={sub.id} className="flex items-center gap-4 px-6 py-4">
                                 <span className="w-8 text-sm text-demigrey">#{idx + 1}</span>
                                 <div className="flex-1">
-                                  <p className="font-mono text-xs text-demigrey">{sub.file_path}</p>
+                                  <P className="font-mono text-xs text-demigrey">{sub.file_path}</P>
                                 </div>
                                 <span
                                   className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${

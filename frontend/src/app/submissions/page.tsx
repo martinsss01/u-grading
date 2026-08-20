@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
+import { P } from "@/components/ui/p";
 
 type Section = {
   id: string;
@@ -37,16 +38,16 @@ export default function SubmissionsPage() {
       <div className="mx-auto max-w-2xl">
         <h1 className="mb-8 text-2xl font-bold text-white">Mis Clases</h1>
 
-        {loading && <p className="text-demigrey">Cargando...</p>}
+        {loading && <P className="text-demigrey">Cargando...</P>}
 
         {error && (
           <div className="rounded-md bg-whiteish px-4 py-2">
-            <p className="text-sm text-red">{error}</p>
+            <P className="text-sm text-red">{error}</P>
           </div>
         )}
 
         {!loading && !error && sections.length === 0 && (
-          <p className="text-demigrey">No estás asignado como ayudante en ninguna sección.</p>
+          <P className="text-demigrey">No estás asignado como ayudante en ninguna sección.</P>
         )}
 
         <ul className="space-y-3">
@@ -58,10 +59,10 @@ export default function SubmissionsPage() {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-lg font-semibold text-white">{s.course.name}</p>
-                    <p className="mt-0.5 text-sm text-demigrey">
+                    <P className="text-lg font-semibold text-white">{s.course.name}</P>
+                    <P className="mt-0.5 text-sm text-demigrey">
                       {s.course.code} · {s.semester} {s.year}
-                    </p>
+                    </P>
                   </div>
                   <span className="text-demigrey transition-colors group-hover:text-white">→</span>
                 </div>

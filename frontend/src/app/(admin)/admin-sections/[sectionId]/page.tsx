@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { courseCodeLabel } from "@/lib/course";
 import { Button } from "@/components/ui/button";
+import { P } from "@/components/ui/p";
 import { Field, FieldLabel } from "@/components/ui/field";
 import {
   Combobox,
@@ -115,29 +116,29 @@ export default function AdminSectionDetailPage() {
           ← Volver a secciones
         </button>
 
-        {loading && <p className="text-demigrey">Cargando...</p>}
-        {loadError && <p className="text-sm text-red/80">{loadError}</p>}
+        {loading && <P className="text-demigrey">Cargando...</P>}
+        {loadError && <P className="text-sm text-red/80">{loadError}</P>}
 
         {section && (
           <>
             <h1 className="text-2xl font-bold text-white">{section.course.name}</h1>
-            <p className="mt-1 text-sm text-demigrey">
+            <P className="mt-1 text-sm text-demigrey">
               {courseCodeLabel(section.course, section.section_number)} · {section.semester} {section.year}
-            </p>
+            </P>
 
             <section className="mt-8 rounded-lg bg-darkergrey p-8 shadow-lg">
               <h2 className="text-xl font-bold text-white">Miembros</h2>
               <ul className="mt-4 space-y-2">
                 {section.members.length === 0 && (
-                  <p className="text-sm text-demigrey">Esta sección no tiene miembros.</p>
+                  <P className="text-sm text-demigrey">Esta sección no tiene miembros.</P>
                 )}
                 {section.members.map((m) => (
                   <li key={m.id} className="flex items-center justify-between gap-2 rounded-md bg-darkgrey p-3">
                     <div className="flex min-w-0 items-center gap-3">
                       <RoleIcon role={m.role} className="size-8 shrink-0 object-contain" />
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-white">{m.user.name}</p>
-                        <p className="truncate text-xs text-demigrey">{m.user.email}</p>
+                        <P className="truncate text-sm font-medium text-white">{m.user.name}</P>
+                        <P className="truncate text-xs text-demigrey">{m.user.email}</P>
                       </div>
                     </div>
                     <div className="flex shrink-0 items-center gap-3">
@@ -198,7 +199,7 @@ export default function AdminSectionDetailPage() {
                   </Select>
                 </Field>
 
-                {addError && <p className="text-sm text-red/80">{addError}</p>}
+                {addError && <P className="text-sm text-red/80">{addError}</P>}
 
                 <Button
                   type="submit"

@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import api from "@/lib/api";
+import { P } from "@/components/ui/p";
 import { courseCodeLabel } from "@/lib/course";
 import { getCurrentSemester } from "@/lib/semester";
 
@@ -133,16 +134,16 @@ function StudentAssignmentsContent() {
           )}
         </div>
 
-        {loading && <p className="text-demigrey">Cargando...</p>}
+        {loading && <P className="text-demigrey">Cargando...</P>}
 
         {error && (
           <div className="rounded-md bg-whiteish px-4 py-2">
-            <p className="text-sm text-red">{error}</p>
+            <P className="text-sm text-red">{error}</P>
           </div>
         )}
 
         {!loading && !error && visibleGroups.length === 0 && (
-          <p className="text-demigrey">No estás inscrito en ninguna sección con evaluaciones.</p>
+          <P className="text-demigrey">No estás inscrito en ninguna sección con evaluaciones.</P>
         )}
 
         <div className="space-y-6">
@@ -150,18 +151,18 @@ function StudentAssignmentsContent() {
             <section key={course.id} className="rounded-lg bg-darkgrey shadow-lg">
               <div className="rounded-t-lg bg-darkergrey px-6 py-4">
                 <h2 className="text-lg font-bold text-white">{course.name}</h2>
-                <p className="mt-0.5 text-sm text-demigrey">{courseCodeLabel(course)}</p>
+                <P className="mt-0.5 text-sm text-demigrey">{courseCodeLabel(course)}</P>
               </div>
 
               {assignments.length === 0 ? (
-                <p className="px-6 py-4 text-sm text-demigrey">Sin evaluaciones.</p>
+                <P className="px-6 py-4 text-sm text-demigrey">Sin evaluaciones.</P>
               ) : (
                 <div className="divide-y divide-grey/20">
                   {groupByType(assignments).map(([type, items]) => (
                     <div key={type}>
-                      <p className="px-6 pt-4 pb-2 text-xs font-semibold uppercase tracking-widest text-demigrey">
+                      <P className="px-6 pt-4 pb-2 text-xs font-semibold uppercase tracking-widest text-demigrey">
                         {TYPE_PLURAL[type] ?? type}
-                      </p>
+                      </P>
                       <ul>
                         {items.map((a) => (
                           <li key={a.id}>
@@ -170,11 +171,11 @@ function StudentAssignmentsContent() {
                               className="group flex w-full items-center gap-4 px-6 py-3 text-left transition-colors hover:bg-darkergrey/50"
                             >
                               <div className="flex-1">
-                                <p className="font-medium text-white group-hover:text-white">{a.title}</p>
-                                <p className="mt-0.5 text-xs text-demigrey">
+                                <P className="font-medium text-white group-hover:text-white">{a.title}</P>
+                                <P className="mt-0.5 text-xs text-demigrey">
                                   {a.section.semester} {a.section.year}
                                   {a.due_date ? ` · Entrega: ${formatDate(a.due_date)}` : ""}
-                                </p>
+                                </P>
                               </div>
                               <span className="w-10 text-right text-sm text-white">
                                 {a.grade != null ? a.grade.toFixed(1) : "—"}

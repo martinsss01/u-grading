@@ -6,6 +6,7 @@ import api from "@/lib/api";
 import { courseCodeLabel } from "@/lib/course";
 import { SEMESTER } from "@/lib/semester";
 import { Button } from "@/components/ui/button";
+import { P } from "@/components/ui/p";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -150,9 +151,9 @@ export default function AdminSectionsPage() {
           </div>
 
           {courses.length === 0 && !loading && (
-            <p className="mt-3 rounded-md bg-darkergrey p-3 text-sm text-demigrey">
+            <P className="mt-3 rounded-md bg-darkergrey p-3 text-sm text-demigrey">
               No hay cursos cargados en el sistema.
-            </p>
+            </P>
           )}
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
@@ -206,7 +207,7 @@ export default function AdminSectionsPage() {
               </Field>
             </div>
 
-            {error && <p className="text-sm text-red/80">{error}</p>}
+            {error && <P className="text-sm text-red/80">{error}</P>}
 
             <Button
               type="submit"
@@ -226,9 +227,9 @@ export default function AdminSectionsPage() {
             <div>
               <h2 className="text-xl font-bold text-white">Secciones</h2>
               {drillYear !== null && (
-                <p className="mt-1 text-xs font-semibold uppercase tracking-widest text-demigrey">
+                <P className="mt-1 text-xs font-semibold uppercase tracking-widest text-demigrey">
                   {drillYear}{drillSemester ? ` · ${drillSemester}` : ""}
-                </p>
+                </P>
               )}
             </div>
             {drillYear !== null && (
@@ -238,13 +239,13 @@ export default function AdminSectionsPage() {
             )}
           </div>
 
-          {loading && <p className="mt-4 text-sm text-demigrey">Cargando...</p>}
-          {loadError && <p className="mt-4 text-sm text-red/80">{loadError}</p>}
+          {loading && <P className="mt-4 text-sm text-demigrey">Cargando...</P>}
+          {loadError && <P className="mt-4 text-sm text-red/80">{loadError}</P>}
 
           {!loading && !loadError && drillYear === null && (
             <div className="mt-4 space-y-2">
               {years.length === 0 && (
-                <p className="text-sm text-demigrey">No hay secciones creadas.</p>
+                <P className="text-sm text-demigrey">No hay secciones creadas.</P>
               )}
               {years.map((y) => (
                 <button
@@ -277,7 +278,7 @@ export default function AdminSectionsPage() {
           {!loading && !loadError && drillYear !== null && drillSemester !== null && (
             <ul className="mt-4 space-y-3">
               {sectionsFor(drillYear, drillSemester).length === 0 && (
-                <p className="text-sm text-demigrey">No hay secciones en este semestre.</p>
+                <P className="text-sm text-demigrey">No hay secciones en este semestre.</P>
               )}
               {sectionsFor(drillYear, drillSemester).map((s) => {
                 const isConfirming = confirmDeleteId === s.id;
@@ -285,10 +286,10 @@ export default function AdminSectionsPage() {
                   <li key={s.id} className="rounded-md bg-darkgrey p-4">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="truncate font-semibold text-white">{s.course.name}</p>
-                        <p className="mt-0.5 text-xs text-demigrey">
+                        <P className="truncate font-semibold text-white">{s.course.name}</P>
+                        <P className="mt-0.5 text-xs text-demigrey">
                           {courseCodeLabel(s.course, s.section_number)} · {s.semester} {s.year}
-                        </p>
+                        </P>
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
                         <button

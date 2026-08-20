@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { P } from "@/components/ui/p";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -183,7 +184,7 @@ export default function AdminUsersPage() {
               </Select>
             </Field>
 
-            {error && <p className="text-sm text-red/80">{error}</p>}
+            {error && <P className="text-sm text-red/80">{error}</P>}
 
             <Button
               type="submit"
@@ -221,11 +222,11 @@ export default function AdminUsersPage() {
             </Select>
           </div>
 
-          {loadError && <p className="mt-4 text-sm text-red/80">{loadError}</p>}
+          {loadError && <P className="mt-4 text-sm text-red/80">{loadError}</P>}
 
           <ul className="mt-4 space-y-3">
             {!loading && users.length === 0 && (
-              <p className="text-sm text-demigrey">No hay usuarios que coincidan con la búsqueda.</p>
+              <P className="text-sm text-demigrey">No hay usuarios que coincidan con la búsqueda.</P>
             )}
             {users.map((u) => {
               const isConfirming = confirmDeleteId === u.id;
@@ -233,8 +234,8 @@ export default function AdminUsersPage() {
                 <li key={u.id} className="rounded-md bg-darkgrey p-4">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="truncate font-semibold text-white">{u.name}</p>
-                      <p className="mt-0.5 truncate text-xs text-demigrey">{u.email}</p>
+                      <P className="truncate font-semibold text-white">{u.name}</P>
+                      <P className="mt-0.5 truncate text-xs text-demigrey">{u.email}</P>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                       <RoleBadge role={u.role} />

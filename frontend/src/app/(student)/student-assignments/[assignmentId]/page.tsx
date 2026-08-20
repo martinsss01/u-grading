@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import api from "@/lib/api";
+import { P } from "@/components/ui/p";
 
 type Question = {
   id: string;
@@ -91,11 +92,11 @@ export default function AssignmentDetailPage() {
           ← Volver
         </button>
 
-        {loading && <p className="text-demigrey">Cargando...</p>}
+        {loading && <P className="text-demigrey">Cargando...</P>}
 
         {error && (
           <div className="rounded-md bg-whiteish px-4 py-2">
-            <p className="text-sm text-red">{error}</p>
+            <P className="text-sm text-red">{error}</P>
           </div>
         )}
 
@@ -147,34 +148,34 @@ export default function AssignmentDetailPage() {
                   )}
                 </div>
               </div>
-              <p className="mt-1 text-sm text-demigrey">
+              <P className="mt-1 text-sm text-demigrey">
                 {a.section.course.name} ({a.section.course.code}) · {a.section.semester} {a.section.year}
-              </p>
+              </P>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="rounded-lg bg-darkgrey px-5 py-4">
-                <p className="text-xs uppercase tracking-widest text-demigrey">Tipo</p>
-                <p className="mt-1 font-medium text-white">{a.type}</p>
+                <P className="text-xs uppercase tracking-widest text-demigrey">Tipo</P>
+                <P className="mt-1 font-medium text-white">{a.type}</P>
               </div>
               <div className="rounded-lg bg-darkgrey px-5 py-4">
-                <p className="text-xs uppercase tracking-widest text-demigrey">Fecha de entrega</p>
-                <p className="mt-1 font-medium text-white">
+                <P className="text-xs uppercase tracking-widest text-demigrey">Fecha de entrega</P>
+                <P className="mt-1 font-medium text-white">
                   {formatDate(a.due_date) ?? "Sin fecha"}
-                </p>
+                </P>
               </div>
             </div>
 
             {a.rubric && (
               <div className="rounded-lg bg-darkgrey px-5 py-4">
-                <p className="mb-2 text-xs uppercase tracking-widest text-demigrey">Descripción y criterios</p>
-                <p className="whitespace-pre-wrap text-sm text-white">{a.rubric}</p>
+                <P className="mb-2 text-xs uppercase tracking-widest text-demigrey">Descripción y criterios</P>
+                <P className="whitespace-pre-wrap text-sm text-white">{a.rubric}</P>
               </div>
             )}
 
             {a.status === "Listo" && a.questions.length > 0 && (
               <div className="rounded-lg bg-darkgrey px-5 py-4">
-                <p className="mb-3 text-xs uppercase tracking-widest text-demigrey">Notas por pregunta</p>
+                <P className="mb-3 text-xs uppercase tracking-widest text-demigrey">Notas por pregunta</P>
                 <ul className="space-y-2">
                   {a.questions
                     .slice()

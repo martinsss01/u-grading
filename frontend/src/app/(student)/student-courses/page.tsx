@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
+import { P } from "@/components/ui/p";
 import { RoleIcon } from "@/components/role-icon";
 import { courseCodeLabel } from "@/lib/course";
 import { SEMESTER } from "@/lib/semester";
@@ -81,24 +82,24 @@ export default function StudentCoursesPage() {
       <div className="mx-auto max-w-3xl">
         <h1 className="mb-8 text-2xl font-bold text-white">Mis Cursos</h1>
 
-        {loading && <p className="text-demigrey">Cargando...</p>}
+        {loading && <P className="text-demigrey">Cargando...</P>}
 
         {error && (
           <div className="rounded-md bg-whiteish px-4 py-2">
-            <p className="text-sm text-red">{error}</p>
+            <P className="text-sm text-red">{error}</P>
           </div>
         )}
 
         {!loading && !error && sections.length === 0 && (
-          <p className="text-demigrey">No estás inscrito en ningún curso.</p>
+          <P className="text-demigrey">No estás inscrito en ningún curso.</P>
         )}
 
         <div className="space-y-6">
           {groupBySemester(sections).map((group) => (
             <section key={group.label}>
-              <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-demigrey">
+              <P className="mb-3 text-xs font-semibold uppercase tracking-widest text-demigrey">
                 {group.label}
-              </p>
+              </P>
               <div className="divide-y divide-grey/20 rounded-lg bg-darkgrey shadow-lg">
                 {group.sections.map((s) => (
                   <button
@@ -113,8 +114,8 @@ export default function StudentCoursesPage() {
                     <div className="flex items-center gap-3">
                       <RoleIcon role={role} className="size-6 shrink-0 object-contain" />
                       <div>
-                        <p className="font-medium text-white">{s.course.name}</p>
-                        <p className="mt-0.5 text-xs text-demigrey">{courseCodeLabel(s.course, s.section_number)}</p>
+                        <P className="font-medium text-white">{s.course.name}</P>
+                        <P className="mt-0.5 text-xs text-demigrey">{courseCodeLabel(s.course, s.section_number)}</P>
                       </div>
                     </div>
                     <span className="text-demigrey transition-colors group-hover:text-white">→</span>
