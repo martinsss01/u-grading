@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import api from "@/lib/api";
 import { P } from "@/components/ui/p";
@@ -118,7 +119,12 @@ function StudentAssignmentsContent() {
     <main className="min-h-[calc(100vh-64px)] px-6 py-10">
       <div className="mx-auto max-w-3xl">
         <div className="mb-8 flex items-baseline gap-3">
-          <h1 className="text-2xl font-bold text-white">Mis Evaluaciones</h1>
+          <div className="flex items-center gap-2.5">
+            <span className="relative size-7 shrink-0">
+              <Image src="/images/Evaluations.png" alt="" fill sizes="28px" quality={100} unoptimized className="object-contain" />
+            </span>
+            <h1 className="text-2xl font-bold text-white">Mis Evaluaciones</h1>
+          </div>
           {semester && year && (
             <span className="text-sm text-demigrey">
               {semester} {year}
