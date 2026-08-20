@@ -177,7 +177,7 @@ function StudentAssignmentsContent() {
                                 </p>
                               </div>
                               <span className="w-10 text-right text-sm text-white">
-                                {a.grade !== null ? a.grade.toFixed(1) : "—"}
+                                {a.grade != null ? a.grade.toFixed(1) : "—"}
                               </span>
                               <span
                                 className={`w-28 shrink-0 rounded-full px-2.5 py-0.5 text-center text-xs font-medium ${STATUS_COLORS[a.status] ?? "bg-grey/20 text-lemigrey"}`}
