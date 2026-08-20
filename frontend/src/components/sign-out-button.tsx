@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 export function SignOutButton() {
   const router = useRouter();
@@ -14,11 +15,12 @@ export function SignOutButton() {
   if (pathname === "/") return null;
 
   return (
-    <button
+    <Button
+      variant="ghost"
       onClick={signOut}
-      className="text-sm text-demigrey transition-colors hover:text-white"
+      className="h-auto rounded-md px-2 py-1 text-sm text-demigrey hover:bg-transparent hover:text-white"
     >
       Cerrar sesión
-    </button>
+    </Button>
   );
 }
