@@ -108,37 +108,7 @@ export default function StudentCalendarPage() {
   return (
     <main className="min-h-[calc(100vh-64px)] px-6 py-10">
       <div className="mx-auto max-w-5xl">
-        <div className="mb-8 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-white">Calendario</h1>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              onClick={() => setCursor(new Date(year, month - 1, 1))}
-              className="h-auto rounded-md px-3 py-1.5 text-sm text-demigrey hover:bg-darkgrey hover:text-white"
-              aria-label="Mes anterior"
-            >
-              ←
-            </Button>
-            <P className="w-40 text-center text-lg font-semibold text-white">
-              {MONTH_NAMES[month]} {year}
-            </P>
-            <Button
-              variant="ghost"
-              onClick={() => setCursor(new Date(year, month + 1, 1))}
-              className="h-auto rounded-md px-3 py-1.5 text-sm text-demigrey hover:bg-darkgrey hover:text-white"
-              aria-label="Mes siguiente"
-            >
-              →
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => setCursor(new Date(today.getFullYear(), today.getMonth(), 1))}
-              className="h-auto rounded-md px-3 py-1.5 text-sm text-demigrey hover:bg-darkgrey hover:text-white"
-            >
-              Hoy
-            </Button>
-          </div>
-        </div>
+        <h1 className="mb-8 text-2xl font-bold text-white">Calendario</h1>
 
         {loading && <P className="text-demigrey">Cargando...</P>}
 
@@ -151,6 +121,35 @@ export default function StudentCalendarPage() {
         {!loading && !error && (
           <div className="flex gap-6">
             <div className="flex-1 rounded-lg bg-darkgrey p-4 shadow-lg">
+              <div className="mb-4 flex items-center justify-center gap-3">
+                <Button
+                  variant="ghost"
+                  onClick={() => setCursor(new Date(year, month - 1, 1))}
+                  className="h-auto rounded-md px-3 py-1.5 text-sm text-demigrey hover:bg-darkgrey hover:text-white"
+                  aria-label="Mes anterior"
+                >
+                  ←
+                </Button>
+                <P className="w-40 text-center text-lg font-semibold text-white">
+                  {MONTH_NAMES[month]} {year}
+                </P>
+                <Button
+                  variant="ghost"
+                  onClick={() => setCursor(new Date(year, month + 1, 1))}
+                  className="h-auto rounded-md px-3 py-1.5 text-sm text-demigrey hover:bg-darkgrey hover:text-white"
+                  aria-label="Mes siguiente"
+                >
+                  →
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setCursor(new Date(today.getFullYear(), today.getMonth(), 1))}
+                  className="h-auto rounded-md px-3 py-1.5 text-sm text-demigrey hover:bg-darkgrey hover:text-white"
+                >
+                  Hoy
+                </Button>
+              </div>
+
               <div className="grid grid-cols-7 gap-1.5">
                 {WEEKDAYS.map((w) => (
                   <div key={w} className="px-1 pb-2 text-center text-xs font-semibold uppercase tracking-widest text-demigrey">
