@@ -11,6 +11,11 @@ type Question = {
   max_points: number;
 };
 
+type QuestionGrade = {
+  question_id: string;
+  grade: number | null;
+};
+
 type Assignment = {
   id: string;
   title: string;
@@ -26,6 +31,7 @@ type Assignment = {
     year: number;
     course: { id: string; name: string; code: string };
   };
+  answer_grades: QuestionGrade[] | null;
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -64,8 +70,10 @@ export default function AssignmentDetailPage() {
       return;
     }
 
+    const user = JSON.parse(localStorage.getItem("user")!) as { id: string };
+
     api
-      .get<Assignment>(`/api/v1/assignments/${assignmentId}`)
+      .get<Assignment>(`/api/v1/assignments/${assignmentId}`, { params: { user_id: user.id } })
       .then((res) => setAssignment(res.data))
       .catch(() => setError("No se pudo cargar la evaluación."))
       .finally(() => setLoading(false));
@@ -164,29 +172,23 @@ export default function AssignmentDetailPage() {
               </div>
             )}
 
-            {a.questions.length > 0 && (
+            {a.status === "Listo" && a.questions.length > 0 && (
               <div className="rounded-lg bg-darkgrey px-5 py-4">
-                <p className="mb-3 text-xs uppercase tracking-widest text-demigrey">Preguntas</p>
-                <ol className="space-y-3">
+                <p className="mb-3 text-xs uppercase tracking-widest text-demigrey">Notas por pregunta</p>
+                <ul className="space-y-2">
                   {a.questions
                     .slice()
                     .sort((x, y) => x.number - y.number)
-                    .map((q) => (
-                      <li key={q.id} className="flex gap-3">
-                        <span className="mt-0.5 w-5 shrink-0 text-sm text-demigrey">{q.number}.</span>
-                        <div className="flex-1">
-                          <p className="text-sm text-white">{q.description}</p>
-                          <p className="mt-0.5 text-xs text-demigrey">{q.max_points} pts</p>
-                        </div>
-                      </li>
-                    ))}
-                </ol>
-                <p className="mt-4 border-t border-grey/20 pt-3 text-right text-xs text-demigrey">
-                  Total:{" "}
-                  <span className="text-white">
-                    {a.questions.reduce((s, q) => s + q.max_points, 0).toFixed(1)} pts
-                  </span>
-                </p>
+                    .map((q) => {
+                      const grade = a.answer_grades?.find((g) => g.question_id === q.id)?.grade ?? null;
+                      return (
+                        <li key={q.id} className="flex items-center justify-between text-sm">
+                          <span className="text-white">P{q.number}</span>
+                          <span className="text-white">{grade != null ? grade.toFixed(1) : "—"}</span>
+                        </li>
+                      );
+                    })}
+                </ul>
               </div>
             )}
           </div>

@@ -66,6 +66,13 @@ class SectionWithCourse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class QuestionGrade(BaseModel):
+    question_id: uuid.UUID
+    grade: float | None
+
+    model_config = {"from_attributes": True}
+
+
 class AssignmentDetail(BaseModel):
     id: uuid.UUID
     title: str
@@ -76,6 +83,7 @@ class AssignmentDetail(BaseModel):
     created_at: datetime
     questions: list[QuestionRead]
     section: SectionWithCourse
+    answer_grades: list[QuestionGrade] | None = None
 
     model_config = {"from_attributes": True}
 
@@ -87,6 +95,7 @@ class StudentAssignment(BaseModel):
     status: AssignmentStatus
     due_date: datetime | None
     section: SectionSummary
+    grade: float | None = None
 
     model_config = {"from_attributes": True}
 

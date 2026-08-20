@@ -2,7 +2,7 @@ import uuid
 from collections import defaultdict
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -10,7 +10,7 @@ from app.db.session import get_db
 from app.models.assignment import Assignment, Question
 from app.models.enums import Role
 from app.models.section import Section, SectionMember
-from app.models.submission import Submission
+from app.models.submission import Answer, Submission
 from app.schemas.assignment import AssignmentCreate, AssignmentDetail, AssignmentRead, AssignmentUpdate, CourseAssignments
 
 router = APIRouter()
@@ -37,13 +37,35 @@ async def list_student_assignments(user_id: uuid.UUID, db: AsyncSession = Depend
     result = await db.execute(stmt)
     assignments = result.scalars().all()
 
+    grade_map: dict[uuid.UUID, float] = {}
+    if assignments:
+        grade_stmt = (
+            select(Submission.assignment_id, func.avg(Answer.grade))
+            .join(Answer, Answer.submission_id == Submission.id)
+            .where(
+                Submission.user_id == user_id,
+                Submission.assignment_id.in_([a.id for a in assignments]),
+            )
+            .group_by(Submission.assignment_id)
+        )
+        grade_rows = await db.execute(grade_stmt)
+        grade_map = {assignment_id: avg_grade for assignment_id, avg_grade in grade_rows.all() if avg_grade is not None}
+
     grouped: dict[str, list] = defaultdict(list)
     course_map = {}
     for a in assignments:
         cid = str(a.section.course.id)
         if cid not in course_map:
             course_map[cid] = a.section.course
-        grouped[cid].append(a)
+        grouped[cid].append({
+            "id": a.id,
+            "title": a.title,
+            "type": a.type,
+            "status": a.status,
+            "due_date": a.due_date,
+            "section": a.section,
+            "grade": grade_map.get(a.id),
+        })
 
     return [{"course": course_map[cid], "assignments": grouped[cid]} for cid in course_map]
 
@@ -62,7 +84,7 @@ async def list_teacher_assignments(user_id: uuid.UUID, db: AsyncSession = Depend
 
 
 @router.get("/{assignment_id}", response_model=AssignmentDetail)
-async def get_assignment(assignment_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def get_assignment(assignment_id: uuid.UUID, user_id: uuid.UUID | None = None, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         select(Assignment)
         .where(Assignment.id == assignment_id)
@@ -71,7 +93,20 @@ async def get_assignment(assignment_id: uuid.UUID, db: AsyncSession = Depends(ge
             selectinload(Assignment.section).selectinload(Section.course),
         )
     )
-    return result.scalar_one()
+    assignment = result.scalar_one()
+
+    answer_grades = None
+    if user_id is not None:
+        ans_stmt = (
+            select(Answer.question_id, Answer.grade)
+            .join(Submission, Answer.submission_id == Submission.id)
+            .where(Submission.assignment_id == assignment_id, Submission.user_id == user_id)
+        )
+        ans_rows = await db.execute(ans_stmt)
+        answer_grades = [{"question_id": qid, "grade": grade} for qid, grade in ans_rows.all()]
+
+    detail = AssignmentDetail.model_validate(assignment)
+    return detail.model_copy(update={"answer_grades": answer_grades})
 
 
 @router.patch("/{assignment_id}", response_model=AssignmentRead)
