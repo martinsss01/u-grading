@@ -27,7 +27,7 @@ type CourseGroup = {
   assignments: Assignment[];
 };
 
-type DueAssignment = Assignment & { courseName: string };
+type DueAssignment = Assignment & { courseName: string; courseCode: string };
 
 const WEEKDAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
@@ -69,7 +69,7 @@ export default function StudentCalendarPage() {
         const flat = res.data.flatMap((g) =>
           g.assignments
             .filter((a) => a.due_date)
-            .map((a) => ({ ...a, courseName: g.course.name }))
+            .map((a) => ({ ...a, courseName: g.course.name, courseCode: g.course.code }))
         );
         setAssignments(flat);
       })
@@ -219,8 +219,10 @@ export default function StudentCalendarPage() {
                         onClick={() => router.push(`/student-assignments/${a.id}`)}
                         className="h-auto w-full flex-col items-start rounded-md bg-darkergrey px-3 py-2 text-left hover:bg-darkergrey/70"
                       >
-                        <P className="text-sm font-medium text-white">{a.title}</P>
-                        <P className="mt-0.5 text-xs text-demigrey">{a.courseName}</P>
+                        <P className="w-full truncate text-sm font-medium text-white">{a.title}</P>
+                        <P className="w-full truncate text-xs text-demigrey">
+                          {a.courseCode} - {a.courseName}
+                        </P>
                       </Button>
                     </li>
                   ))}
