@@ -6,12 +6,14 @@ import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { P } from "@/components/ui/p";
 import { RoleIcon } from "@/components/role-icon";
+import { courseCodeLabel } from "@/lib/course";
 import { SEMESTER } from "@/lib/semester";
 
 type Section = {
   id: string;
   semester: string;
   year: number;
+  section_number: number;
   course: { id: string; name: string; code: string };
 };
 
@@ -66,7 +68,7 @@ export default function SubmissionsPage() {
 
   return (
     <main className="min-h-[calc(100vh-64px)] px-6 py-10">
-      <div className="mx-auto max-w-2xl">
+      <div className="mx-auto max-w-3xl">
         <div className="mb-8 flex items-center gap-2.5">
           <span className="relative size-7 shrink-0">
             <Image src="/images/TACourses.png" alt="" fill sizes="28px" quality={100} unoptimized className="object-contain" />
@@ -103,7 +105,7 @@ export default function SubmissionsPage() {
                       <RoleIcon role="Ayudante" className="size-6 shrink-0 object-contain" />
                       <div>
                         <P className="font-medium text-white">{s.course.name}</P>
-                        <P className="mt-0.5 text-xs text-demigrey">{s.course.code}</P>
+                        <P className="mt-0.5 text-xs text-demigrey">{courseCodeLabel(s.course, s.section_number)}</P>
                       </div>
                     </div>
                     <span className="text-demigrey transition-colors group-hover:text-white">→</span>
