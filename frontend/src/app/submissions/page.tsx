@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { P } from "@/components/ui/p";
 import { RoleIcon } from "@/components/role-icon";
+import { SEMESTER } from "@/lib/semester";
 
 type Section = {
   id: string;
@@ -13,6 +14,34 @@ type Section = {
   year: number;
   course: { id: string; name: string; code: string };
 };
+
+type SemesterGroup = {
+  label: string;
+  year: number;
+  semester: string;
+  sections: Section[];
+};
+
+// Within a year, Verano (Dec-Jan) comes after Primavera (Aug-Nov), which
+// comes after Otoño (Mar-Jul), so Verano is listed first when sorting
+// most-recent-first.
+const SEMESTER_ORDER = [SEMESTER.SUMMER, SEMESTER.SPRING, SEMESTER.FALL];
+
+function groupBySemester(sections: Section[]): SemesterGroup[] {
+  const map = new Map<string, SemesterGroup>();
+  for (const s of sections) {
+    const key = `${s.semester}-${s.year}`;
+    if (!map.has(key)) {
+      map.set(key, { label: `${s.semester} ${s.year}`, year: s.year, semester: s.semester, sections: [] });
+    }
+    map.get(key)!.sections.push(s);
+  }
+  return [...map.values()].sort((a, b) => {
+    if (a.year !== b.year) return b.year - a.year;
+    return SEMESTER_ORDER.indexOf(a.semester as (typeof SEMESTER_ORDER)[number]) -
+      SEMESTER_ORDER.indexOf(b.semester as (typeof SEMESTER_ORDER)[number]);
+  });
+}
 
 export default function SubmissionsPage() {
   const router = useRouter();
@@ -57,27 +86,33 @@ export default function SubmissionsPage() {
           <P className="text-demigrey">No estás asignado como ayudante en ninguna sección.</P>
         )}
 
-        <ul className="space-y-3">
-          {sections.map((s) => (
-            <li key={s.id}>
-              <button
-                onClick={() => router.push(`/submissions/${s.id}`)}
-                className="group w-full rounded-lg bg-darkgrey px-6 py-5 text-left shadow-lg transition-colors hover:bg-darkgrey/70"
-              >
-                <div className="flex items-center gap-3">
-                  <RoleIcon role="Ayudante" className="size-8 shrink-0 object-contain" />
-                  <div className="flex-1">
-                    <P className="text-lg font-semibold text-white">{s.course.name}</P>
-                    <P className="mt-0.5 text-sm text-demigrey">
-                      {s.course.code} · {s.semester} {s.year}
-                    </P>
-                  </div>
-                  <span className="text-demigrey transition-colors group-hover:text-white">→</span>
-                </div>
-              </button>
-            </li>
+        <div className="space-y-6">
+          {groupBySemester(sections).map((group) => (
+            <section key={group.label}>
+              <P className="mb-3 text-xs font-semibold uppercase tracking-widest text-demigrey">
+                {group.label}
+              </P>
+              <div className="divide-y divide-grey/20 rounded-lg bg-darkgrey shadow-lg">
+                {group.sections.map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => router.push(`/submissions/${s.id}`)}
+                    className="group flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-darkergrey/50"
+                  >
+                    <div className="flex items-center gap-3">
+                      <RoleIcon role="Ayudante" className="size-6 shrink-0 object-contain" />
+                      <div>
+                        <P className="font-medium text-white">{s.course.name}</P>
+                        <P className="mt-0.5 text-xs text-demigrey">{s.course.code}</P>
+                      </div>
+                    </div>
+                    <span className="text-demigrey transition-colors group-hover:text-white">→</span>
+                  </button>
+                ))}
+              </div>
+            </section>
           ))}
-        </ul>
+        </div>
       </div>
     </main>
   );
