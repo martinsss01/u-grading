@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { P } from "@/components/ui/p";
+import { RoleIcon } from "@/components/role-icon";
 
 type Section = {
   id: string;
@@ -63,8 +64,9 @@ export default function SubmissionsPage() {
                 onClick={() => router.push(`/submissions/${s.id}`)}
                 className="group w-full rounded-lg bg-darkgrey px-6 py-5 text-left shadow-lg transition-colors hover:bg-darkgrey/70"
               >
-                <div className="flex items-center justify-between">
-                  <div>
+                <div className="flex items-center gap-3">
+                  <RoleIcon role="Ayudante" className="size-8 shrink-0 object-contain" />
+                  <div className="flex-1">
                     <P className="text-lg font-semibold text-white">{s.course.name}</P>
                     <P className="mt-0.5 text-sm text-demigrey">
                       {s.course.code} · {s.semester} {s.year}
