@@ -7,6 +7,16 @@ import api from "@/lib/api";
 import { P } from "@/components/ui/p";
 import { courseCodeLabel } from "@/lib/course";
 import { getCurrentSemester } from "@/lib/semester";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxTrigger,
+  ComboboxValue,
+} from "@/components/ui/combobox";
+import { Button } from "@/components/ui/button";
+import { XIcon } from "lucide-react";
 
 type Section = {
   id: string;
@@ -84,6 +94,7 @@ function StudentAssignmentsContent() {
   const [groups, setGroups] = useState<CourseGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<string[]>([]);
 
   useEffect(() => {
     const raw = localStorage.getItem("user");
@@ -105,11 +116,12 @@ function StudentAssignmentsContent() {
   const visibleGroups = courseFiltered
     .map((g) => ({
       ...g,
-      assignments: sectionId
+      assignments: (sectionId
         ? g.assignments.filter((a) => a.section.id === sectionId)
         : g.assignments.filter(
             (a) => a.section.semester === current.semester && a.section.year === current.year
-          ),
+          )
+      ).filter((a) => typeFilter.length === 0 || typeFilter.includes(a.type)),
     }))
     // Only drop courses with nothing to show in the plain "current semester" view;
     // an explicitly selected course/section keeps showing even if empty.
@@ -137,6 +149,37 @@ function StudentAssignmentsContent() {
             >
               Ver todas
             </button>
+          )}
+
+          <Combobox multiple value={typeFilter} onValueChange={setTypeFilter}>
+            <ComboboxTrigger className="flex items-center gap-1.5 rounded-md bg-darkergrey px-3 py-2 text-sm text-white transition-colors hover:bg-darkergrey/70 focus-visible:border-red/50 focus-visible:ring-red/20">
+              <ComboboxValue placeholder="Todos los tipos">
+                {(value: string[]) =>
+                  value.length === 0 ? "Todos los tipos" : `Tipo (${value.length})`
+                }
+              </ComboboxValue>
+            </ComboboxTrigger>
+            <ComboboxContent>
+              <ComboboxList>
+                {TYPE_ORDER.map((type) => (
+                  <ComboboxItem key={type} value={type}>
+                    {TYPE_PLURAL[type] ?? type}
+                  </ComboboxItem>
+                ))}
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
+
+          {typeFilter.length > 0 && (
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              className="text-demigrey hover:text-white"
+              onClick={() => setTypeFilter([])}
+              aria-label="Limpiar filtro de tipos"
+            >
+              <XIcon />
+            </Button>
           )}
         </div>
 
