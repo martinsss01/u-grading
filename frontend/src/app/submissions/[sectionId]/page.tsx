@@ -6,18 +6,9 @@ import { useRouter, useParams } from "next/navigation";
 import api from "@/lib/api";
 import { P } from "@/components/ui/p";
 
-type Answer = {
-  id: string;
-  question_id: string;
-  grade: number | null;
-  graded_at: string | null;
-};
-
 type Submission = {
   id: string;
-  file_path: string;
   needs_checking: boolean;
-  answers: Answer[];
 };
 
 type Assignment = {
@@ -55,14 +46,6 @@ function groupByType(assignments: Assignment[]): [string, Assignment[]][] {
   return [...map.entries()].sort(
     ([a], [b]) => (TYPE_ORDER.indexOf(a) ?? 99) - (TYPE_ORDER.indexOf(b) ?? 99)
   );
-}
-
-function averageGrade(answers: Answer[]): string {
-  if (answers.length === 0) return "—";
-  const graded = answers.filter((a) => a.grade !== null);
-  if (graded.length === 0) return "Sin calificar";
-  const total = graded.reduce((sum, a) => sum + (a.grade ?? 0), 0);
-  return (total / graded.length).toFixed(1);
 }
 
 export default function SectionSubmissionsPage() {
@@ -124,43 +107,26 @@ export default function SectionSubmissionsPage() {
                     {TYPE_PLURAL[type] ?? type}
                   </h2>
                   <div className="space-y-4">
-                    {assignments.map((assignment) => (
-                      <section key={assignment.id} className="rounded-lg bg-darkgrey shadow-lg">
-                        <div className="flex items-baseline gap-3 rounded-t-lg bg-darkergrey px-6 py-4">
+                    {assignments.map((assignment) => {
+                      const pending = assignment.submissions.filter((s) => s.needs_checking).length;
+                      return (
+                        <button
+                          key={assignment.id}
+                          onClick={() => router.push(`/submissions/${sectionId}/${assignment.id}`)}
+                          className="flex w-full items-center gap-3 rounded-lg bg-darkgrey px-6 py-4 text-left shadow-lg transition-colors hover:bg-darkgrey/80"
+                        >
                           <h3 className="font-bold text-white">{assignment.title}</h3>
                           <span className="ml-auto text-xs text-demigrey">
                             {assignment.submissions.length} entrega{assignment.submissions.length !== 1 ? "s" : ""}
                           </span>
-                        </div>
-
-                        {assignment.submissions.length === 0 ? (
-                          <P className="px-6 py-4 text-sm text-demigrey">Sin entregas.</P>
-                        ) : (
-                          <ul className="divide-y divide-grey/20">
-                            {assignment.submissions.map((sub, idx) => (
-                              <li key={sub.id} className="flex items-center gap-4 px-6 py-4">
-                                <span className="w-8 text-sm text-demigrey">#{idx + 1}</span>
-                                <div className="flex-1">
-                                  <P className="font-mono text-xs text-demigrey">{sub.file_path}</P>
-                                </div>
-                                <span
-                                  className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                                    sub.needs_checking
-                                      ? "bg-red/20 text-red"
-                                      : "bg-grey/20 text-lemigrey"
-                                  }`}
-                                >
-                                  {sub.needs_checking ? "Por revisar" : "Revisado"}
-                                </span>
-                                <span className="w-20 text-right text-sm text-white">
-                                  {averageGrade(sub.answers)}
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </section>
-                    ))}
+                          {pending > 0 && (
+                            <span className="rounded-full bg-red/20 px-2.5 py-0.5 text-xs font-medium text-red">
+                              {pending} por revisar
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
