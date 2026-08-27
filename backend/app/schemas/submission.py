@@ -25,6 +25,14 @@ class SubmissionRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class SubmissionCreated(BaseModel):
+    id: uuid.UUID
+    file_path: str
+    needs_checking: bool
+
+    model_config = {"from_attributes": True}
+
+
 class AssignmentWithSubmissions(BaseModel):
     id: uuid.UUID
     title: str

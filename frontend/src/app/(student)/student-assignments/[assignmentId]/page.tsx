@@ -58,11 +58,31 @@ export default function AssignmentDetailPage() {
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    // TODO: wire up actual upload once the endpoint is ready.
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
     e.target.value = "";
+    if (!file) return;
+
+    const user = JSON.parse(localStorage.getItem("user")!) as { id: string };
+    const formData = new FormData();
+    formData.append("assignment_id", assignmentId);
+    formData.append("user_id", user.id);
+    formData.append("file", file);
+
+    setUploading(true);
+    try {
+      await api.post("/api/v1/submissions/", formData, {
+        headers: { "Content-Type": undefined },
+      });
+      setAssignment((prev) => (prev ? { ...prev, status: "En Calificación" } : prev));
+    } catch {
+      setError("No se pudo subir el archivo.");
+    } finally {
+      setUploading(false);
+    }
   }
 
   useEffect(() => {
@@ -122,9 +142,10 @@ export default function AssignmentDetailPage() {
                       />
                       <button
                         onClick={() => fileInputRef.current?.click()}
-                        className="rounded-md bg-red px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red/80"
+                        disabled={uploading}
+                        className="rounded-md bg-red px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red/80 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        Subir archivo
+                        {uploading ? "Subiendo..." : "Subir archivo"}
                       </button>
                     </>
                   )}
