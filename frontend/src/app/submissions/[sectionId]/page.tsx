@@ -120,7 +120,7 @@ export default function SectionSubmissionsPage() {
                             {assignment.submissions.length} entrega{assignment.submissions.length !== 1 ? "s" : ""}
                           </span>
                           {pending > 0 && (
-                            <span className="rounded-full bg-red/20 px-2.5 py-0.5 text-xs font-medium text-red">
+                            <span className="rounded-full bg-red/20 px-2.5 py-0.5 text-xs font-medium text-red-400">
                               {pending} por revisar
                             </span>
                           )}

@@ -111,7 +111,7 @@ export default function AssignmentSubmissionsPage() {
                       <span
                         className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
                           sub.needs_checking
-                            ? "bg-red/20 text-red"
+                            ? "bg-red/20 text-red-400"
                             : "bg-grey/20 text-lemigrey"
                         }`}
                       >
