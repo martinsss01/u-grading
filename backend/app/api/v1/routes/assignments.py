@@ -12,6 +12,7 @@ from app.models.enums import Role
 from app.models.section import Section, SectionMember
 from app.models.submission import Answer, Submission
 from app.schemas.assignment import AssignmentCreate, AssignmentDetail, AssignmentRead, AssignmentUpdate, CourseAssignments
+from app.schemas.submission import SubmissionRead
 
 router = APIRouter()
 
@@ -39,17 +40,30 @@ async def list_student_assignments(user_id: uuid.UUID, db: AsyncSession = Depend
 
     grade_map: dict[uuid.UUID, float] = {}
     if assignments:
-        grade_stmt = (
-            select(Submission.assignment_id, func.avg(Answer.grade))
-            .join(Answer, Answer.submission_id == Submission.id)
-            .where(
-                Submission.user_id == user_id,
-                Submission.assignment_id.in_([a.id for a in assignments]),
-            )
-            .group_by(Submission.assignment_id)
+        # A student can have several submissions per assignment (re-uploads before
+        # the due date); only the latest one's grades should count.
+        sub_stmt = select(Submission.id, Submission.assignment_id, Submission.created_at).where(
+            Submission.user_id == user_id,
+            Submission.assignment_id.in_([a.id for a in assignments]),
         )
-        grade_rows = await db.execute(grade_stmt)
-        grade_map = {assignment_id: avg_grade for assignment_id, avg_grade in grade_rows.all() if avg_grade is not None}
+        sub_rows = await db.execute(sub_stmt)
+        latest_submission_ids: dict[uuid.UUID, tuple[uuid.UUID, object]] = {}
+        for sub_id, assignment_id, created_at in sub_rows.all():
+            current = latest_submission_ids.get(assignment_id)
+            if current is None or created_at > current[1]:
+                latest_submission_ids[assignment_id] = (sub_id, created_at)
+        latest_ids = [sub_id for sub_id, _ in latest_submission_ids.values()]
+
+        grade_map = {}
+        if latest_ids:
+            grade_stmt = (
+                select(Submission.assignment_id, func.avg(Answer.grade))
+                .join(Answer, Answer.submission_id == Submission.id)
+                .where(Submission.id.in_(latest_ids))
+                .group_by(Submission.assignment_id)
+            )
+            grade_rows = await db.execute(grade_stmt)
+            grade_map = {assignment_id: avg_grade for assignment_id, avg_grade in grade_rows.all() if avg_grade is not None}
 
     grouped: dict[str, list] = defaultdict(list)
     course_map = {}
@@ -96,6 +110,7 @@ async def get_assignment(assignment_id: uuid.UUID, user_id: uuid.UUID | None = N
     assignment = result.scalar_one()
 
     answer_grades = None
+    submission_history: list[SubmissionRead] = []
     if user_id is not None:
         ans_stmt = (
             select(Answer.question_id, Answer.grade)
@@ -105,8 +120,17 @@ async def get_assignment(assignment_id: uuid.UUID, user_id: uuid.UUID | None = N
         ans_rows = await db.execute(ans_stmt)
         answer_grades = [{"question_id": qid, "grade": grade} for qid, grade in ans_rows.all()]
 
+        sub_stmt = (
+            select(Submission)
+            .where(Submission.assignment_id == assignment_id, Submission.user_id == user_id)
+            .options(selectinload(Submission.answers))
+            .order_by(Submission.created_at.desc())
+        )
+        sub_result = await db.execute(sub_stmt)
+        submission_history = [SubmissionRead.model_validate(s) for s in sub_result.scalars().all()]
+
     detail = AssignmentDetail.model_validate(assignment)
-    return detail.model_copy(update={"answer_grades": answer_grades})
+    return detail.model_copy(update={"answer_grades": answer_grades, "submission_history": submission_history})
 
 
 @router.patch("/{assignment_id}", response_model=AssignmentRead)

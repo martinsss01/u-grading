@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, CheckConstraint, DateTime, Float, ForeignKey, String, Uuid, text
+from sqlalchemy import Boolean, CheckConstraint, DateTime, Float, ForeignKey, String, Uuid, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -22,6 +22,7 @@ class Submission(Base):
     assignment_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("assignments.id"))
     file_path: Mapped[str] = mapped_column(String)
     needs_checking: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     user: Mapped["User"] = relationship()
     assignment: Mapped["Assignment"] = relationship(back_populates="submissions")

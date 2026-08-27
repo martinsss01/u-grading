@@ -1,5 +1,6 @@
 import shutil
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
@@ -29,33 +30,44 @@ async def create_submission(
     if assignment is None:
         raise HTTPException(status_code=404, detail="Assignment not found")
 
+    if assignment.due_date is not None and datetime.now(timezone.utc) >= assignment.due_date:
+        raise HTTPException(status_code=403, detail="La fecha de entrega ya pasó")
+
     # Strip any client-supplied path, keep only the filename.
     safe_filename = Path(file.filename or "archivo").name
+    submission_id = uuid.uuid4()
     dest_dir = Path(settings.UPLOAD_DIR) / str(assignment_id) / str(user_id)
     dest_dir.mkdir(parents=True, exist_ok=True)
-    dest_path = dest_dir / safe_filename
+    # Prefix with the submission id so re-uploads don't overwrite prior files —
+    # every upload is kept as its own history entry.
+    dest_path = dest_dir / f"{submission_id}_{safe_filename}"
 
     with dest_path.open("wb") as out:
         shutil.copyfileobj(file.file, out)
 
-    result = await db.execute(
-        select(Submission).where(
-            Submission.assignment_id == assignment_id,
-            Submission.user_id == user_id,
-        )
+    submission = Submission(
+        id=submission_id,
+        assignment_id=assignment_id,
+        user_id=user_id,
+        file_path=str(dest_path),
+        needs_checking=True,
     )
-    submission = result.scalar_one_or_none()
-    if submission is None:
-        submission = Submission(assignment_id=assignment_id, user_id=user_id)
-        db.add(submission)
-
-    submission.file_path = str(dest_path)
-    submission.needs_checking = True
+    db.add(submission)
     assignment.status = AssignmentStatus.GRADING
 
     await db.commit()
     await db.refresh(submission)
     return submission
+
+
+def _latest_per_user(submissions: list[Submission]) -> list[Submission]:
+    """Reduce a list of submissions to the newest one per student."""
+    latest: dict[uuid.UUID, Submission] = {}
+    for s in submissions:
+        current = latest.get(s.user_id)
+        if current is None or s.created_at > current.created_at:
+            latest[s.user_id] = s
+    return list(latest.values())
 
 
 @router.get("/section/{section_id}", response_model=SectionSubmissions)
@@ -84,7 +96,7 @@ async def list_section_submissions(section_id: uuid.UUID, db: AsyncSession = Dep
                 "id": a.id,
                 "title": a.title,
                 "type": a.type,
-                "submissions": a.submissions,
+                "submissions": _latest_per_user(a.submissions),
             }
             for a in assignments
         ],

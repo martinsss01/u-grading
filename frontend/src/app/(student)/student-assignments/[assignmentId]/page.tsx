@@ -17,6 +17,12 @@ type QuestionGrade = {
   grade: number | null;
 };
 
+type Submission = {
+  id: string;
+  file_path: string;
+  created_at: string;
+};
+
 type Assignment = {
   id: string;
   title: string;
@@ -33,6 +39,7 @@ type Assignment = {
     course: { id: string; name: string; code: string };
   };
   answer_grades: QuestionGrade[] | null;
+  submission_history: Submission[];
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -77,7 +84,12 @@ export default function AssignmentDetailPage() {
       await api.post("/api/v1/submissions/", formData, {
         headers: { "Content-Type": undefined },
       });
-      setAssignment((prev) => (prev ? { ...prev, status: "En Calificación" } : prev));
+      // Refetch so we pick up the new submission in the history list along
+      // with the updated status, rather than patching state by hand.
+      const res = await api.get<Assignment>(`/api/v1/assignments/${assignmentId}`, {
+        params: { user_id: user.id },
+      });
+      setAssignment(res.data);
     } catch {
       setError("No se pudo subir el archivo.");
     } finally {
@@ -101,6 +113,7 @@ export default function AssignmentDetailPage() {
   }, [assignmentId, router]);
 
   const a = assignment;
+  const isPastDue = a?.due_date ? new Date(a.due_date) < new Date() : false;
 
   return (
     <main className="min-h-[calc(100vh-64px)] px-6 py-10">
@@ -157,7 +170,7 @@ export default function AssignmentDetailPage() {
             )}
 
             <div className="flex justify-end">
-              {a.status === "Pendiente" && (
+              {!isPastDue && (
                 <>
                   <input
                     type="file"
@@ -170,29 +183,53 @@ export default function AssignmentDetailPage() {
                     disabled={uploading}
                     className="rounded-md bg-red px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red/80 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {uploading ? "Subiendo..." : "Subir archivo"}
+                    {uploading
+                      ? "Subiendo..."
+                      : a.submission_history.length > 0
+                        ? "Volver a subir archivo"
+                        : "Subir archivo"}
                   </button>
                 </>
               )}
 
-              {a.status === "En Calificación" && (
+              {isPastDue && (
                 <button
                   disabled
                   className="cursor-not-allowed rounded-md bg-grey/20 px-3 py-1.5 text-xs font-medium text-demigrey"
                 >
-                  Subir archivo
+                  Fecha de entrega finalizada
                 </button>
               )}
 
               {a.status === "Listo" && (
                 <button
                   // TODO: navigate to the correction-review view once it exists.
-                  className="rounded-md bg-green-500/20 px-3 py-1.5 text-xs font-medium text-green-400 transition-colors hover:bg-green-500/30"
+                  className="ml-3 rounded-md bg-green-500/20 px-3 py-1.5 text-xs font-medium text-green-400 transition-colors hover:bg-green-500/30"
                 >
                   Revisar corrección
                 </button>
               )}
             </div>
+
+            {a.submission_history.length > 0 && (
+              <div className="rounded-lg bg-darkgrey px-5 py-4">
+                <P className="mb-3 text-xs uppercase tracking-widest text-demigrey">Historial de entregas</P>
+                <ul className="divide-y divide-grey/20">
+                  {a.submission_history.map((s, idx) => (
+                    <li key={s.id} className="flex items-center justify-between py-2 text-sm">
+                      <span className="text-white">{formatDate(s.created_at)}</span>
+                      <span
+                        className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                          idx === 0 ? "bg-green-500/20 text-green-400" : "bg-grey/30 text-lemigrey"
+                        }`}
+                      >
+                        {idx === 0 ? "Vigente" : "Reemplazada"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {a.status === "Listo" && a.questions.length > 0 && (
               <div className="rounded-lg bg-darkgrey px-5 py-4">

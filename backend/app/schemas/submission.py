@@ -20,6 +20,7 @@ class SubmissionRead(BaseModel):
     id: uuid.UUID
     file_path: str
     needs_checking: bool
+    created_at: datetime
     answers: list[AnswerRead]
 
     model_config = {"from_attributes": True}

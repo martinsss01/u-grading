@@ -4,6 +4,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 from app.models.enums import AssignmentStatus, AssignmentType, Semester
+from app.schemas.submission import SubmissionRead
 
 
 class QuestionCreate(BaseModel):
@@ -84,6 +85,10 @@ class AssignmentDetail(BaseModel):
     questions: list[QuestionRead]
     section: SectionWithCourse
     answer_grades: list[QuestionGrade] | None = None
+    # Named to avoid colliding with the `Assignment.submissions` ORM relationship
+    # (which isn't eager-loaded here) — pydantic's from_attributes validation
+    # would otherwise try to lazy-load it and crash outside an async context.
+    submission_history: list[SubmissionRead] = Field(default_factory=list)
 
     model_config = {"from_attributes": True}
 
