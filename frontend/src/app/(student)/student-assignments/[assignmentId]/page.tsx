@@ -125,49 +125,11 @@ export default function AssignmentDetailPage() {
             <div>
               <div className="flex items-start justify-between gap-4">
                 <h1 className="text-2xl font-bold text-white">{a.title}</h1>
-                <div className="flex shrink-0 items-center gap-3">
-                  <span
-                    className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[a.status] ?? "bg-grey/20 text-lemigrey"}`}
-                  >
-                    {a.status}
-                  </span>
-
-                  {a.status === "Pendiente" && (
-                    <>
-                      <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleFileChange}
-                        className="hidden"
-                      />
-                      <button
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={uploading}
-                        className="rounded-md bg-red px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red/80 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {uploading ? "Subiendo..." : "Subir archivo"}
-                      </button>
-                    </>
-                  )}
-
-                  {a.status === "En Calificación" && (
-                    <button
-                      disabled
-                      className="cursor-not-allowed rounded-md bg-grey/20 px-3 py-1.5 text-xs font-medium text-demigrey"
-                    >
-                      Subir archivo
-                    </button>
-                  )}
-
-                  {a.status === "Listo" && (
-                    <button
-                      // TODO: navigate to the correction-review view once it exists.
-                      className="rounded-md bg-green-500/20 px-3 py-1.5 text-xs font-medium text-green-400 transition-colors hover:bg-green-500/30"
-                    >
-                      Revisar corrección
-                    </button>
-                  )}
-                </div>
+                <span
+                  className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[a.status] ?? "bg-grey/20 text-lemigrey"}`}
+                >
+                  {a.status}
+                </span>
               </div>
               <P className="mt-1 text-sm text-demigrey">
                 {a.section.course.name} ({a.section.course.code}) · {a.section.semester} {a.section.year}
@@ -193,6 +155,44 @@ export default function AssignmentDetailPage() {
                 <P className="whitespace-pre-wrap text-sm text-white">{a.rubric}</P>
               </div>
             )}
+
+            <div className="flex justify-end">
+              {a.status === "Pendiente" && (
+                <>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="rounded-md bg-red px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red/80 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {uploading ? "Subiendo..." : "Subir archivo"}
+                  </button>
+                </>
+              )}
+
+              {a.status === "En Calificación" && (
+                <button
+                  disabled
+                  className="cursor-not-allowed rounded-md bg-grey/20 px-3 py-1.5 text-xs font-medium text-demigrey"
+                >
+                  Subir archivo
+                </button>
+              )}
+
+              {a.status === "Listo" && (
+                <button
+                  // TODO: navigate to the correction-review view once it exists.
+                  className="rounded-md bg-green-500/20 px-3 py-1.5 text-xs font-medium text-green-400 transition-colors hover:bg-green-500/30"
+                >
+                  Revisar corrección
+                </button>
+              )}
+            </div>
 
             {a.status === "Listo" && a.questions.length > 0 && (
               <div className="rounded-lg bg-darkgrey px-5 py-4">
