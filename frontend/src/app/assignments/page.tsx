@@ -33,6 +33,7 @@ type Assignment = {
   title: string;
   type: AssignmentType;
   status: string;
+  open_date: string | null;
   due_date: string | null;
   rubric: string | null;
   questions: Question[];
@@ -61,6 +62,7 @@ export default function AssignmentsPage() {
   const [title, setTitle] = useState("");
   const [type, setType] = useState<AssignmentType>("Tarea");
   const [sectionId, setSectionId] = useState("");
+  const [openDate, setOpenDate] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [rubric, setRubric] = useState("");
   const [fields, setFields] = useState<QuestionField[]>([{ ...emptyField }]);
@@ -92,6 +94,7 @@ export default function AssignmentsPage() {
   function resetForm() {
     setTitle("");
     setType("Tarea");
+    setOpenDate("");
     setDueDate("");
     setRubric("");
     setFields([{ ...emptyField }]);
@@ -103,6 +106,7 @@ export default function AssignmentsPage() {
     setTitle(a.title);
     setType(a.type);
     setSectionId(a.section_id);
+    setOpenDate(isoToDatetimeLocal(a.open_date));
     setDueDate(isoToDatetimeLocal(a.due_date));
     setRubric(a.rubric ?? "");
     setFields(
@@ -129,6 +133,7 @@ export default function AssignmentsPage() {
 
     if (!sectionId) { setError("Selecciona una sección primero."); return; }
 
+    const openDateIso = openDate ? new Date(openDate).toISOString() : null;
     const dueDateIso = dueDate ? new Date(dueDate).toISOString() : null;
 
     const questions = fields
@@ -139,11 +144,11 @@ export default function AssignmentsPage() {
     try {
       if (editingId) {
         await api.patch(`/api/v1/assignments/${editingId}`, {
-          title, type, rubric: rubric || null, due_date: dueDateIso, questions,
+          title, type, rubric: rubric || null, open_date: openDateIso, due_date: dueDateIso, questions,
         });
       } else {
         await api.post("/api/v1/assignments/", {
-          section_id: sectionId, title, type, rubric: rubric || null, due_date: dueDateIso, questions,
+          section_id: sectionId, title, type, rubric: rubric || null, open_date: openDateIso, due_date: dueDateIso, questions,
         });
       }
       const raw = localStorage.getItem("user")!;
@@ -231,7 +236,7 @@ export default function AssignmentsPage() {
               />
             </Field>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <Field>
                 <FieldLabel htmlFor="type" className="text-white">Tipo</FieldLabel>
                 <Select value={type} onValueChange={(v) => setType(v as AssignmentType)}>
@@ -244,6 +249,18 @@ export default function AssignmentsPage() {
                     ))}
                   </SelectContent>
                 </Select>
+              </Field>
+
+              <Field>
+                <FieldLabel htmlFor="openDate" className="text-white">Fecha de inicio</FieldLabel>
+                <Input
+                  id="openDate"
+                  type="datetime-local"
+                  lang="es-CL"
+                  value={openDate}
+                  onChange={(e) => setOpenDate(e.target.value)}
+                  className="rounded-md bg-darkergrey text-white placeholder:text-demigrey [color-scheme:dark] focus-visible:border-red/50 focus-visible:ring-red/20"
+                />
               </Field>
 
               <Field>

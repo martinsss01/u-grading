@@ -26,6 +26,7 @@ class Assignment(Base):
     status: Mapped[AssignmentStatus] = mapped_column(
         pg_enum(AssignmentStatus, "assignment_status"), default=AssignmentStatus.PENDING
     )
+    open_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     due_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

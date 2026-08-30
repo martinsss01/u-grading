@@ -24,6 +24,7 @@ class AssignmentCreate(BaseModel):
     title: str
     type: AssignmentType
     rubric: str | None = None
+    open_date: datetime | None = None
     due_date: datetime | None = None
     questions: list[QuestionCreate] = Field(default_factory=list)
 
@@ -35,6 +36,7 @@ class AssignmentRead(BaseModel):
     type: AssignmentType
     status: AssignmentStatus
     rubric: str | None
+    open_date: datetime | None
     due_date: datetime | None
     created_at: datetime
     questions: list[QuestionRead]
@@ -80,6 +82,7 @@ class AssignmentDetail(BaseModel):
     type: AssignmentType
     status: AssignmentStatus
     rubric: str | None
+    open_date: datetime | None
     due_date: datetime | None
     created_at: datetime
     questions: list[QuestionRead]
@@ -114,5 +117,6 @@ class AssignmentUpdate(BaseModel):
     title: str | None = None
     type: AssignmentType | None = None
     rubric: str | None = None
+    open_date: datetime | None = None
     due_date: datetime | None = None
     questions: list[QuestionCreate] | None = None
