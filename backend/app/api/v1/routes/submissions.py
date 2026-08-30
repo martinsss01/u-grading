@@ -1,6 +1,5 @@
 import shutil
 import uuid
-from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
@@ -34,7 +33,10 @@ async def create_submission(
     if assignment is None:
         raise HTTPException(status_code=404, detail="Assignment not found")
 
-    if assignment.due_date is not None and datetime.now(timezone.utc) >= assignment.due_date:
+    status = assignment.status
+    if status == AssignmentStatus.PENDING:
+        raise HTTPException(status_code=403, detail="La evaluación aún no está abierta")
+    if status == AssignmentStatus.CLOSED:
         raise HTTPException(status_code=403, detail="La fecha de entrega ya pasó")
 
     submission: Submission | None = None
@@ -61,7 +63,6 @@ async def create_submission(
 
     db.add(SubmissionFile(id=file_id, submission_id=submission.id, file_path=str(dest_path), filename=safe_filename))
     submission.needs_checking = True
-    assignment.status = AssignmentStatus.GRADING
 
     await db.commit()
     await db.refresh(submission, attribute_names=["files", "answers"])

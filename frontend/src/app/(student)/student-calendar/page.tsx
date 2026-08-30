@@ -32,8 +32,8 @@ type DueAssignment = Assignment & { courseName: string; courseCode: string };
 
 const STATUS_COLORS: Record<string, string> = {
   Pendiente: "bg-grey/30 text-lemigrey",
-  "En Calificación": "bg-yellow-500/20 text-yellow-400",
-  Listo: "bg-green-500/20 text-green-400",
+  Abierto: "bg-green-500/20 text-green-400",
+  Cerrado: "bg-red/20 text-red-400",
 };
 
 const WEEKDAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];

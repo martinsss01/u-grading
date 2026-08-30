@@ -36,6 +36,7 @@ type Assignment = {
   type: string;
   status: string;
   rubric: string | null;
+  open_date: string | null;
   due_date: string | null;
   created_at: string;
   filename: string | null;
@@ -52,8 +53,8 @@ type Assignment = {
 
 const STATUS_COLORS: Record<string, string> = {
   Pendiente: "bg-grey/30 text-lemigrey",
-  "En Calificación": "bg-yellow-500/20 text-yellow-400",
-  Listo: "bg-green-500/20 text-green-400",
+  Abierto: "bg-green-500/20 text-green-400",
+  Cerrado: "bg-red/20 text-red-400",
 };
 
 function formatDate(iso: string | null) {
@@ -129,7 +130,8 @@ export default function AssignmentDetailPage() {
   }, [assignmentId, router]);
 
   const a = assignment;
-  const isPastDue = a?.due_date ? new Date(a.due_date) < new Date() : false;
+  const canUpload = a?.status === "Abierto";
+  const hasGrades = a?.answer_grades?.some((g) => g.grade != null) ?? false;
 
   return (
     <main className="min-h-[calc(100vh-64px)] px-6 py-10">
@@ -165,10 +167,16 @@ export default function AssignmentDetailPage() {
               </P>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="rounded-lg bg-darkgrey px-5 py-4">
                 <P className="text-xs uppercase tracking-widest text-demigrey">Tipo</P>
                 <P className="mt-1 font-medium text-white">{a.type}</P>
+              </div>
+              <div className="rounded-lg bg-darkgrey px-5 py-4">
+                <P className="text-xs uppercase tracking-widest text-demigrey">Fecha de inicio</P>
+                <P className="mt-1 font-medium text-white">
+                  {formatDate(a.open_date) ?? "Sin fecha"}
+                </P>
               </div>
               <div className="rounded-lg bg-darkgrey px-5 py-4">
                 <P className="text-xs uppercase tracking-widest text-demigrey">Fecha de entrega</P>
@@ -203,7 +211,7 @@ export default function AssignmentDetailPage() {
             )}
 
             <div className="flex justify-end">
-              {!isPastDue && (
+              {canUpload && (
                 <>
                   <input
                     type="file"
@@ -221,16 +229,16 @@ export default function AssignmentDetailPage() {
                 </>
               )}
 
-              {isPastDue && (
+              {!canUpload && (
                 <button
                   disabled
                   className="cursor-not-allowed rounded-md bg-grey/20 px-3 py-1.5 text-xs font-medium text-demigrey"
                 >
-                  Fecha de entrega finalizada
+                  {a.status === "Pendiente" ? "Aún no disponible" : "Fecha de entrega finalizada"}
                 </button>
               )}
 
-              {a.status === "Listo" && (
+              {hasGrades && (
                 <button
                   // TODO: navigate to the correction-review view once it exists.
                   className="ml-3 rounded-md bg-green-500/20 px-3 py-1.5 text-xs font-medium text-green-400 transition-colors hover:bg-green-500/30"
@@ -269,7 +277,7 @@ export default function AssignmentDetailPage() {
               </div>
             )}
 
-            {a.status === "Listo" && a.questions.length > 0 && (
+            {hasGrades && a.questions.length > 0 && (
               <div className="rounded-lg bg-darkgrey px-5 py-4">
                 <P className="mb-3 text-xs uppercase tracking-widest text-demigrey">Notas por pregunta</P>
                 <ul className="space-y-2">

@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text, Uuid, func, text
@@ -13,6 +13,17 @@ if TYPE_CHECKING:
     from app.models.submission import Submission
 
 
+def compute_status(open_date: datetime | None, due_date: datetime | None, now: datetime | None = None) -> AssignmentStatus:
+    """An assignment's status is always derived from its dates, never stored:
+    not open yet, open for submissions, or past its due date."""
+    now = now or datetime.now(timezone.utc)
+    if open_date is not None and now < open_date:
+        return AssignmentStatus.PENDING
+    if due_date is not None and now >= due_date:
+        return AssignmentStatus.CLOSED
+    return AssignmentStatus.OPEN
+
+
 class Assignment(Base):
     __tablename__ = "assignments"
 
@@ -23,9 +34,6 @@ class Assignment(Base):
     title: Mapped[str] = mapped_column(String)
     type: Mapped[AssignmentType] = mapped_column(pg_enum(AssignmentType, "assignment_type"))
     rubric: Mapped[str | None] = mapped_column(Text)
-    status: Mapped[AssignmentStatus] = mapped_column(
-        pg_enum(AssignmentStatus, "assignment_status"), default=AssignmentStatus.PENDING
-    )
     open_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     due_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -38,6 +46,10 @@ class Assignment(Base):
     section: Mapped["Section"] = relationship(back_populates="assignments")
     questions: Mapped[list["Question"]] = relationship(back_populates="assignment")
     submissions: Mapped[list["Submission"]] = relationship(back_populates="assignment")
+
+    @property
+    def status(self) -> AssignmentStatus:
+        return compute_status(self.open_date, self.due_date)
 
 
 class Question(Base):

@@ -22,9 +22,12 @@ class Role(str, enum.Enum):
 
 
 class AssignmentStatus(str, enum.Enum):
+    """Purely a function of now vs. an assignment's open_date/due_date — see
+    `app.models.assignment.compute_status`. Never stored; always computed."""
+
     PENDING = "Pendiente"
-    GRADING = "En Calificación"
-    DONE = "Listo"
+    OPEN = "Abierto"
+    CLOSED = "Cerrado"
 
 
 class AssignmentType(str, enum.Enum):
