@@ -173,6 +173,7 @@ async def delete_section(section_id: uuid.UUID, db: AsyncSession = Depends(get_d
             selectinload(Section.members),
             selectinload(Section.assignments).selectinload(Assignment.questions),
             selectinload(Section.assignments).selectinload(Assignment.submissions).selectinload(Submission.answers),
+            selectinload(Section.assignments).selectinload(Assignment.submissions).selectinload(Submission.files),
         )
     )
     section = result.scalar_one_or_none()
@@ -183,6 +184,8 @@ async def delete_section(section_id: uuid.UUID, db: AsyncSession = Depends(get_d
         for submission in assignment.submissions:
             for answer in submission.answers:
                 await db.delete(answer)
+            for sub_file in submission.files:
+                await db.delete(sub_file)
             await db.delete(submission)
         for question in assignment.questions:
             await db.delete(question)

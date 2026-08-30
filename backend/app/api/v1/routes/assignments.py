@@ -123,7 +123,7 @@ async def get_assignment(assignment_id: uuid.UUID, user_id: uuid.UUID | None = N
         sub_stmt = (
             select(Submission)
             .where(Submission.assignment_id == assignment_id, Submission.user_id == user_id)
-            .options(selectinload(Submission.answers))
+            .options(selectinload(Submission.answers), selectinload(Submission.files))
             .order_by(Submission.created_at.desc())
         )
         sub_result = await db.execute(sub_stmt)
@@ -175,6 +175,7 @@ async def delete_assignment(assignment_id: uuid.UUID, db: AsyncSession = Depends
         .options(
             selectinload(Assignment.questions),
             selectinload(Assignment.submissions).selectinload(Submission.answers),
+            selectinload(Assignment.submissions).selectinload(Submission.files),
         )
     )
     assignment = result.scalar_one_or_none()
@@ -184,6 +185,8 @@ async def delete_assignment(assignment_id: uuid.UUID, db: AsyncSession = Depends
     for sub in assignment.submissions:
         for ans in sub.answers:
             await db.delete(ans)
+        for f in sub.files:
+            await db.delete(f)
         await db.delete(sub)
     for q in assignment.questions:
         await db.delete(q)
@@ -198,6 +201,7 @@ async def create_assignment(payload: AssignmentCreate, db: AsyncSession = Depend
         title=payload.title,
         type=payload.type,
         rubric=payload.rubric,
+        open_date=payload.open_date,
         due_date=payload.due_date,
         questions=[
             Question(number=q.number, description=q.description, max_points=q.max_points)

@@ -14,7 +14,6 @@ type Answer = {
 
 type Submission = {
   id: string;
-  file_path: string;
   needs_checking: boolean;
   answers: Answer[];
 };

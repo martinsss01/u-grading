@@ -20,13 +20,28 @@ class Submission(Base):
     )
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))  # anonymized to graders at the API layer
     assignment_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("assignments.id"))
-    file_path: Mapped[str] = mapped_column(String)
     needs_checking: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     user: Mapped["User"] = relationship()
     assignment: Mapped["Assignment"] = relationship(back_populates="submissions")
     answers: Mapped[list["Answer"]] = relationship(back_populates="submission")
+    files: Mapped[list["SubmissionFile"]] = relationship(back_populates="submission")
+
+
+class SubmissionFile(Base):
+    """One uploaded file within a submission — a submission can bundle several."""
+
+    __tablename__ = "submission_files"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, primary_key=True, default=uuid.uuid4, server_default=text("gen_random_uuid()")
+    )
+    submission_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("submissions.id"))
+    file_path: Mapped[str] = mapped_column(String)
+    filename: Mapped[str] = mapped_column(String)
+
+    submission: Mapped["Submission"] = relationship(back_populates="files")
 
 
 class Answer(Base):

@@ -16,20 +16,19 @@ class AnswerRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class SubmissionRead(BaseModel):
+class SubmissionFileRead(BaseModel):
     id: uuid.UUID
-    file_path: str
-    needs_checking: bool
-    created_at: datetime
-    answers: list[AnswerRead]
+    filename: str
 
     model_config = {"from_attributes": True}
 
 
-class SubmissionCreated(BaseModel):
+class SubmissionRead(BaseModel):
     id: uuid.UUID
-    file_path: str
     needs_checking: bool
+    created_at: datetime
+    files: list[SubmissionFileRead]
+    answers: list[AnswerRead]
 
     model_config = {"from_attributes": True}
 

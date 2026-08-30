@@ -8,7 +8,7 @@ from app.core.security import hash_password
 from app.db.session import get_db
 from app.models.enums import Role
 from app.models.section import SectionMember
-from app.models.submission import Answer, Submission
+from app.models.submission import Answer, Submission, SubmissionFile
 from app.models.user import User
 from app.schemas.user import UserCreate, UserRead, UserUpdate
 
@@ -93,6 +93,9 @@ async def delete_user(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
         answer_result = await db.execute(select(Answer).where(Answer.submission_id == submission.id))
         for answer in answer_result.scalars().all():
             await db.delete(answer)
+        file_result = await db.execute(select(SubmissionFile).where(SubmissionFile.submission_id == submission.id))
+        for sub_file in file_result.scalars().all():
+            await db.delete(sub_file)
         await db.delete(submission)
 
     graded_result = await db.execute(select(Answer).where(Answer.graded_by == user_id))

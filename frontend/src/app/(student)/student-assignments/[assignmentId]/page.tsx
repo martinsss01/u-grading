@@ -17,10 +17,15 @@ type QuestionGrade = {
   grade: number | null;
 };
 
+type SubmissionFile = {
+  id: string;
+  filename: string;
+};
+
 type Submission = {
   id: string;
-  file_path: string;
   created_at: string;
+  files: SubmissionFile[];
 };
 
 type Assignment = {
@@ -66,6 +71,10 @@ export default function AssignmentDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  // Once the first file of a visit is uploaded, later adds reuse this id so
+  // they land in the same submission instead of starting a new one. Resets
+  // to null on reload — the next upload after that starts a fresh entry.
+  const [activeSubmissionId, setActiveSubmissionId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -78,14 +87,18 @@ export default function AssignmentDetailPage() {
     formData.append("assignment_id", assignmentId);
     formData.append("user_id", user.id);
     formData.append("file", file);
+    if (activeSubmissionId) {
+      formData.append("submission_id", activeSubmissionId);
+    }
 
     setUploading(true);
     try {
-      await api.post("/api/v1/submissions/", formData, {
+      const uploadRes = await api.post<Submission>("/api/v1/submissions/", formData, {
         headers: { "Content-Type": undefined },
       });
-      // Refetch so we pick up the new submission in the history list along
-      // with the updated status, rather than patching state by hand.
+      setActiveSubmissionId(uploadRes.data.id);
+      // Refetch so we pick up the new file in the history list along with
+      // the updated status, rather than patching state by hand.
       const res = await api.get<Assignment>(`/api/v1/assignments/${assignmentId}`, {
         params: { user_id: user.id },
       });
@@ -183,11 +196,7 @@ export default function AssignmentDetailPage() {
                     disabled={uploading}
                     className="rounded-md bg-red px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red/80 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {uploading
-                      ? "Subiendo..."
-                      : a.submission_history.length > 0
-                        ? "Volver a subir archivo"
-                        : "Subir archivo"}
+                    {uploading ? "Subiendo..." : "Subir archivo"}
                   </button>
                 </>
               )}
@@ -216,15 +225,24 @@ export default function AssignmentDetailPage() {
                 <P className="mb-3 text-xs uppercase tracking-widest text-demigrey">Historial de entregas</P>
                 <ul className="divide-y divide-grey/20">
                   {a.submission_history.map((s, idx) => (
-                    <li key={s.id} className="flex items-center justify-between py-2 text-sm">
-                      <span className="text-white">{formatDate(s.created_at)}</span>
-                      <span
-                        className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          idx === 0 ? "bg-green-500/20 text-green-400" : "bg-grey/30 text-lemigrey"
-                        }`}
-                      >
-                        {idx === 0 ? "Vigente" : "Reemplazada"}
-                      </span>
+                    <li key={s.id} className="py-2 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-white">{formatDate(s.created_at)}</span>
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                            idx === 0 ? "bg-green-500/20 text-green-400" : "bg-grey/30 text-lemigrey"
+                          }`}
+                        >
+                          {idx === 0 ? "Vigente" : "Reemplazada"}
+                        </span>
+                      </div>
+                      <ul className="mt-1 space-y-0.5">
+                        {s.files.map((f) => (
+                          <li key={f.id} className="truncate text-xs text-demigrey">
+                            {f.filename}
+                          </li>
+                        ))}
+                      </ul>
                     </li>
                   ))}
                 </ul>
