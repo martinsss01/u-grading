@@ -167,11 +167,7 @@ export default function AssignmentDetailPage() {
               </P>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <div className="rounded-lg bg-darkgrey px-5 py-4">
-                <P className="text-xs uppercase tracking-widest text-demigrey">Tipo</P>
-                <P className="mt-1 font-medium text-white">{a.type}</P>
-              </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="rounded-lg bg-darkgrey px-5 py-4">
                 <P className="text-xs uppercase tracking-widest text-demigrey">Fecha de inicio</P>
                 <P className="mt-1 font-medium text-white">
