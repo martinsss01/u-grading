@@ -206,7 +206,7 @@ export default function AssignmentDetailPage() {
               </div>
             )}
 
-            <div className="flex justify-end">
+            <div className="flex justify-start">
               {canUpload && (
                 <>
                   <input
