@@ -142,15 +142,6 @@ function StudentAssignmentsContent() {
               {semester} {year}
             </span>
           )}
-          {courseId && (
-            <button
-              onClick={() => router.push("/student-assignments")}
-              className="text-sm text-demigrey transition-colors hover:text-white"
-            >
-              Ver todas
-            </button>
-          )}
-
           <Combobox multiple value={typeFilter} onValueChange={setTypeFilter}>
             <ComboboxTrigger className="flex items-center gap-1.5 rounded-md bg-darkergrey px-3 py-2 text-sm text-white transition-colors hover:bg-darkergrey/70 focus-visible:border-red/50 focus-visible:ring-red/20">
               <ComboboxValue placeholder="Todos los tipos">

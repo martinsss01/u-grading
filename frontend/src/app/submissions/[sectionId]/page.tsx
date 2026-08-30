@@ -88,12 +88,6 @@ export default function SectionSubmissionsPage() {
                 </span>
                 <h1 className="text-2xl font-bold text-white">Mis Ayudantías</h1>
               </div>
-              <button
-                onClick={() => router.push("/submissions")}
-                className="text-sm text-demigrey transition-colors hover:text-white"
-              >
-                Ver todas
-              </button>
             </div>
 
             {data.assignments.length === 0 && (
