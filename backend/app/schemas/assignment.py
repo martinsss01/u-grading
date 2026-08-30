@@ -39,6 +39,7 @@ class AssignmentRead(BaseModel):
     open_date: datetime | None
     due_date: datetime | None
     created_at: datetime
+    filename: str | None
     questions: list[QuestionRead]
 
     model_config = {"from_attributes": True}
@@ -85,6 +86,7 @@ class AssignmentDetail(BaseModel):
     open_date: datetime | None
     due_date: datetime | None
     created_at: datetime
+    filename: str | None
     questions: list[QuestionRead]
     section: SectionWithCourse
     answer_grades: list[QuestionGrade] | None = None

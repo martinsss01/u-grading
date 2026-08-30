@@ -29,6 +29,11 @@ class Assignment(Base):
     open_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     due_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    # The evaluation document the professor attaches instead of typing questions
+    # in by hand — file_path is where it lives on disk, filename is what
+    # students see and download it as.
+    file_path: Mapped[str | None] = mapped_column(String)
+    filename: Mapped[str | None] = mapped_column(String)
 
     section: Mapped["Section"] = relationship(back_populates="assignments")
     questions: Mapped[list["Question"]] = relationship(back_populates="assignment")

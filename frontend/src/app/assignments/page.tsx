@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
 const ASSIGNMENT_TYPES = ["Tarea", "Ejercicio", "Control", "Examen"] as const;
 type AssignmentType = (typeof ASSIGNMENT_TYPES)[number];
 
@@ -18,13 +20,6 @@ type Section = {
   semester: string;
   year: number;
   course: { id: string; name: string; code: string };
-};
-
-type Question = {
-  id: string;
-  number: number;
-  description: string;
-  max_points: number;
 };
 
 type Assignment = {
@@ -36,12 +31,8 @@ type Assignment = {
   open_date: string | null;
   due_date: string | null;
   rubric: string | null;
-  questions: Question[];
+  filename: string | null;
 };
-
-type QuestionField = { description: string; maxPoints: string };
-
-const emptyField: QuestionField = { description: "", maxPoints: "" };
 
 // Converts an ISO due_date into the `yyyy-MM-ddThh:mm` format the native
 // datetime-local input expects, in the browser's local time.
@@ -65,7 +56,11 @@ export default function AssignmentsPage() {
   const [openDate, setOpenDate] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [rubric, setRubric] = useState("");
-  const [fields, setFields] = useState<QuestionField[]>([{ ...emptyField }]);
+  // The file to upload on submit, plus the name of whatever file the
+  // assignment already has attached (shown while editing).
+  const [assignmentFile, setAssignmentFile] = useState<File | null>(null);
+  const [currentFilename, setCurrentFilename] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -97,7 +92,8 @@ export default function AssignmentsPage() {
     setOpenDate("");
     setDueDate("");
     setRubric("");
-    setFields([{ ...emptyField }]);
+    setAssignmentFile(null);
+    setCurrentFilename(null);
     setEditingId(null);
     setError(null);
   }
@@ -109,22 +105,12 @@ export default function AssignmentsPage() {
     setOpenDate(isoToDatetimeLocal(a.open_date));
     setDueDate(isoToDatetimeLocal(a.due_date));
     setRubric(a.rubric ?? "");
-    setFields(
-      a.questions.length > 0
-        ? a.questions
-            .slice()
-            .sort((x, y) => x.number - y.number)
-            .map((q) => ({ description: q.description, maxPoints: String(q.max_points) }))
-        : [{ ...emptyField }]
-    );
+    setAssignmentFile(null);
+    setCurrentFilename(a.filename);
     setEditingId(a.id);
     setConfirmDeleteId(null);
     setError(null);
     formRef.current?.scrollIntoView({ behavior: "smooth" });
-  }
-
-  function updateField(index: number, patch: Partial<QuestionField>) {
-    setFields((cur) => cur.map((f, i) => (i === index ? { ...f, ...patch } : f)));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -136,21 +122,28 @@ export default function AssignmentsPage() {
     const openDateIso = openDate ? new Date(openDate).toISOString() : null;
     const dueDateIso = dueDate ? new Date(dueDate).toISOString() : null;
 
-    const questions = fields
-      .filter((f) => f.description.trim())
-      .map((f, i) => ({ number: i + 1, description: f.description, max_points: parseFloat(f.maxPoints) || 0 }));
-
     setSubmitting(true);
     try {
+      let assignmentId = editingId;
       if (editingId) {
         await api.patch(`/api/v1/assignments/${editingId}`, {
-          title, type, rubric: rubric || null, open_date: openDateIso, due_date: dueDateIso, questions,
+          title, type, rubric: rubric || null, open_date: openDateIso, due_date: dueDateIso,
         });
       } else {
-        await api.post("/api/v1/assignments/", {
-          section_id: sectionId, title, type, rubric: rubric || null, open_date: openDateIso, due_date: dueDateIso, questions,
+        const res = await api.post<Assignment>("/api/v1/assignments/", {
+          section_id: sectionId, title, type, rubric: rubric || null, open_date: openDateIso, due_date: dueDateIso,
+        });
+        assignmentId = res.data.id;
+      }
+
+      if (assignmentFile && assignmentId) {
+        const formData = new FormData();
+        formData.append("file", assignmentFile);
+        await api.post(`/api/v1/assignments/${assignmentId}/file`, formData, {
+          headers: { "Content-Type": undefined },
         });
       }
+
       const raw = localStorage.getItem("user")!;
       const user = JSON.parse(raw) as { id: string };
       resetForm();
@@ -288,36 +281,24 @@ export default function AssignmentsPage() {
             </Field>
 
             <Field>
-              <div className="flex items-center justify-between">
-                <FieldTitle className="text-white">Preguntas</FieldTitle>
-                <Button type="button" variant="link" onClick={() => setFields((f) => [...f, { ...emptyField }])} className="text-white">
-                  + Agregar pregunta
+              <FieldTitle className="text-white">Documentos</FieldTitle>
+              <div className="mt-2 flex items-center gap-3">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={(e) => setAssignmentFile(e.target.files?.[0] ?? null)}
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="shrink-0 rounded-md bg-darkergrey text-white hover:bg-grey/30"
+                >
+                  {currentFilename || assignmentFile ? "Reemplazar archivo" : "Subir archivo"}
                 </Button>
-              </div>
-              <div className="mt-2 space-y-2">
-                {fields.map((field, i) => (
-                  <div key={i} className="flex gap-2">
-                    <span className="mt-2 w-5 text-sm text-demigrey">{i + 1}.</span>
-                    <Input
-                      value={field.description}
-                      onChange={(e) => updateField(i, { description: e.target.value })}
-                      placeholder="Descripción de la pregunta"
-                      className="flex-1 rounded-md bg-darkergrey text-white placeholder:text-demigrey focus-visible:border-red/50 focus-visible:ring-red/20"
-                    />
-                    <Input
-                      value={field.maxPoints}
-                      onChange={(e) => updateField(i, { maxPoints: e.target.value })}
-                      type="number" min="0" step="0.5" placeholder="Pts"
-                      className="w-20 rounded-md bg-darkergrey text-white placeholder:text-demigrey focus-visible:border-red/50 focus-visible:ring-red/20"
-                    />
-                    <Button
-                      type="button" variant="ghost" size="icon-sm"
-                      onClick={() => setFields((f) => f.filter((_, j) => j !== i))}
-                      disabled={fields.length === 1}
-                      className="text-demigrey hover:text-white disabled:opacity-30"
-                    >✕</Button>
-                  </div>
-                ))}
+                <P className="truncate text-sm text-demigrey">
+                  {assignmentFile?.name ?? currentFilename ?? "Sin archivo adjunto"}
+                </P>
               </div>
             </Field>
 
@@ -388,7 +369,19 @@ export default function AssignmentsPage() {
                       )}
                     </div>
                   </div>
-                  <P className="mt-2 text-xs text-demigrey">Estado: {a.status}</P>
+                  <div className="mt-2 flex items-center justify-between">
+                    <P className="text-xs text-demigrey">Estado: {a.status}</P>
+                    {a.filename && (
+                      <a
+                        href={`${API_BASE}/api/v1/assignments/${a.id}/file`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="truncate text-xs text-demigrey hover:text-white"
+                      >
+                        📎 {a.filename}
+                      </a>
+                    )}
+                  </div>
                 </li>
               );
             })}

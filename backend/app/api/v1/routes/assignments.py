@@ -1,11 +1,15 @@
+import shutil
 import uuid
 from collections import defaultdict
+from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.config import settings
 from app.db.session import get_db
 from app.models.assignment import Assignment, Question
 from app.models.enums import Role
@@ -212,3 +216,43 @@ async def create_assignment(payload: AssignmentCreate, db: AsyncSession = Depend
     await db.commit()
     await db.refresh(assignment, attribute_names=["questions"])
     return assignment
+
+
+@router.post("/{assignment_id}/file", response_model=AssignmentRead)
+async def upload_assignment_file(assignment_id: uuid.UUID, file: UploadFile = File(...), db: AsyncSession = Depends(get_db)):
+    """Attach (or replace) the evaluation document professors upload instead
+    of typing questions in by hand."""
+    result = await db.execute(
+        select(Assignment).where(Assignment.id == assignment_id).options(selectinload(Assignment.questions))
+    )
+    assignment = result.scalar_one_or_none()
+    if not assignment:
+        raise HTTPException(status_code=404)
+
+    old_path = assignment.file_path
+
+    safe_filename = Path(file.filename or "archivo").name
+    dest_dir = Path(settings.UPLOAD_DIR) / "assignments" / str(assignment_id)
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest_path = dest_dir / f"{uuid.uuid4()}_{safe_filename}"
+
+    with dest_path.open("wb") as out:
+        shutil.copyfileobj(file.file, out)
+
+    assignment.file_path = str(dest_path)
+    assignment.filename = safe_filename
+    await db.commit()
+    await db.refresh(assignment, attribute_names=["questions"])
+
+    if old_path and old_path != str(dest_path):
+        Path(old_path).unlink(missing_ok=True)
+
+    return assignment
+
+
+@router.get("/{assignment_id}/file")
+async def download_assignment_file(assignment_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    assignment = await db.get(Assignment, assignment_id)
+    if not assignment or not assignment.file_path:
+        raise HTTPException(status_code=404, detail="No hay archivo adjunto")
+    return FileResponse(assignment.file_path, filename=assignment.filename)

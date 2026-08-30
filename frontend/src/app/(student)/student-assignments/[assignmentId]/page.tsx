@@ -5,6 +5,8 @@ import { useRouter, useParams } from "next/navigation";
 import api from "@/lib/api";
 import { P } from "@/components/ui/p";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
 type Question = {
   id: string;
   number: number;
@@ -36,6 +38,7 @@ type Assignment = {
   rubric: string | null;
   due_date: string | null;
   created_at: string;
+  filename: string | null;
   questions: Question[];
   section: {
     id: string;
@@ -179,6 +182,23 @@ export default function AssignmentDetailPage() {
               <div className="rounded-lg bg-darkgrey px-5 py-4">
                 <P className="mb-2 text-xs uppercase tracking-widest text-demigrey">Descripción y criterios</P>
                 <P className="whitespace-pre-wrap text-sm text-white">{a.rubric}</P>
+              </div>
+            )}
+
+            {a.filename && (
+              <div className="flex items-center justify-between rounded-lg bg-darkgrey px-5 py-4">
+                <div className="min-w-0">
+                  <P className="text-xs uppercase tracking-widest text-demigrey">Material de la evaluación</P>
+                  <P className="mt-1 truncate text-sm text-white">{a.filename}</P>
+                </div>
+                <a
+                  href={`${API_BASE}/api/v1/assignments/${a.id}/file`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-3 shrink-0 rounded-md bg-red px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red/80"
+                >
+                  Descargar
+                </a>
               </div>
             )}
 
