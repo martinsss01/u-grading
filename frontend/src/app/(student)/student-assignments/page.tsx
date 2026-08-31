@@ -201,9 +201,14 @@ function StudentAssignmentsContent() {
                 <div className="divide-y divide-grey/20">
                   {groupByType(assignments).map(([type, items]) => (
                     <div key={type}>
-                      <P className="px-6 pt-4 pb-2 text-xs font-semibold uppercase tracking-widest text-demigrey">
-                        {TYPE_PLURAL[type] ?? type}
-                      </P>
+                      <div className="flex items-center gap-4 px-6 pt-4 pb-2">
+                        <P className="flex-1 text-xs font-semibold uppercase tracking-widest text-demigrey">
+                          {TYPE_PLURAL[type] ?? type}
+                        </P>
+                        <span className="w-10 text-right text-xs uppercase tracking-widest text-demigrey">Nota</span>
+                        <span className="w-28 shrink-0 text-center text-xs uppercase tracking-widest text-demigrey">Estado</span>
+                        <span className="w-4" />
+                      </div>
                       <ul>
                         {items.map((a) => (
                           <li key={a.id}>
