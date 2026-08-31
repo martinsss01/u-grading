@@ -2,10 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import QRCode from "qrcode";
 import api from "@/lib/api";
 import { P } from "@/components/ui/p";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+// The origin a phone should use to reach this app — override with a tunnel
+// URL (see docker-compose.yml) when testing the scan flow from a real phone,
+// since the phone can't resolve "localhost" as this machine.
+const APP_ORIGIN = process.env.NEXT_PUBLIC_APP_URL;
 
 type Question = {
   id: string;
@@ -81,6 +86,14 @@ export default function AssignmentDetailPage() {
   // to null on reload — the next upload after that starts a fresh entry.
   const [activeSubmissionId, setActiveSubmissionId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [scanQrUrl, setScanQrUrl] = useState<string | null>(null);
+
+  async function openScanModal() {
+    const user = JSON.parse(localStorage.getItem("user")!) as { id: string };
+    const origin = APP_ORIGIN ?? window.location.origin;
+    const scanUrl = `${origin}/scan/${assignmentId}?user_id=${user.id}`;
+    setScanQrUrl(await QRCode.toDataURL(scanUrl, { margin: 1, width: 256 }));
+  }
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -223,6 +236,12 @@ export default function AssignmentDetailPage() {
                   >
                     {uploading ? "Subiendo..." : "Subir archivo"}
                   </button>
+                  <button
+                    onClick={openScanModal}
+                    className="ml-3 rounded-md bg-darkgrey px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-grey/30"
+                  >
+                    Escanear
+                  </button>
                 </>
               )}
 
@@ -296,6 +315,34 @@ export default function AssignmentDetailPage() {
           </div>
         )}
       </div>
+
+      {scanQrUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-6">
+          <div className="w-full max-w-xs rounded-lg bg-darkgrey p-6 text-center">
+            <P className="text-sm font-medium text-white">Escanea con tu celular</P>
+            <P className="mt-1 text-xs text-demigrey">
+              Abre la cámara de tu teléfono y apunta al código para empezar a escanear.
+            </P>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={scanQrUrl} alt="Código QR para escanear" className="mx-auto mt-4 size-56" />
+            <button
+              onClick={async () => {
+                setScanQrUrl(null);
+                // Refetch in case a page was already scanned and uploaded
+                // from the phone while this modal was open.
+                const user = JSON.parse(localStorage.getItem("user")!) as { id: string };
+                const res = await api.get<Assignment>(`/api/v1/assignments/${assignmentId}`, {
+                  params: { user_id: user.id },
+                });
+                setAssignment(res.data);
+              }}
+              className="mt-4 rounded-md bg-red px-3 py-1.5 text-xs font-medium text-white hover:bg-red/80"
+            >
+              Listo
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

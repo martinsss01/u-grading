@@ -19,6 +19,9 @@ services:
       - "8000:8000"
     environment:
       DATABASE_URL: postgresql+asyncpg://postgres:password@db:5432/ugrading
+      # Extra allowed CORS origin(s), comma-separated — e.g. a cloudflared/ngrok
+      # tunnel URL, so a phone hitting the API through the tunnel isn't blocked.
+      EXTRA_CORS_ORIGINS: ${EXTRA_CORS_ORIGINS:-}
     depends_on:
       - db
 
@@ -32,7 +35,12 @@ services:
     ports:
       - "3001:3001"
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8000
+      # Override with a backend tunnel URL (see EXTRA_CORS_ORIGINS above) when
+      # testing the phone-scan flow, so the phone isn't calling its own localhost.
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      # The origin a phone should open for the QR "Escanear" link — a
+      # frontend tunnel URL when testing; falls back to window.location.origin.
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-}
     depends_on:
       - backend
 
