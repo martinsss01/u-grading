@@ -5,6 +5,8 @@ import { useRouter, useParams } from "next/navigation";
 import api from "@/lib/api";
 import { P } from "@/components/ui/p";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
 type Answer = {
   id: string;
   question_id: string;
@@ -12,9 +14,15 @@ type Answer = {
   graded_at: string | null;
 };
 
+type SubmissionFile = {
+  id: string;
+  filename: string;
+};
+
 type Submission = {
   id: string;
   needs_checking: boolean;
+  files: SubmissionFile[];
   answers: Answer[];
 };
 
@@ -106,6 +114,20 @@ export default function AssignmentSubmissionsPage() {
                     <li key={sub.id} className="flex items-center gap-4 px-6 py-4">
                       <div className="flex-1">
                         <P className="text-sm text-white">Entrega {idx + 1}</P>
+                        <ul className="mt-1 space-y-0.5">
+                          {sub.files.map((f) => (
+                            <li key={f.id}>
+                              <a
+                                href={`${API_BASE}/api/v1/submissions/files/${f.id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="truncate text-xs text-demigrey underline-offset-2 hover:text-white hover:underline"
+                              >
+                                📎 {f.filename}
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
                       <span
                         className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${

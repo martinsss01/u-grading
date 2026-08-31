@@ -3,6 +3,7 @@ import uuid
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -67,6 +68,14 @@ async def create_submission(
     await db.commit()
     await db.refresh(submission, attribute_names=["files", "answers"])
     return submission
+
+
+@router.get("/files/{file_id}")
+async def download_submission_file(file_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    file = await db.get(SubmissionFile, file_id)
+    if file is None:
+        raise HTTPException(status_code=404, detail="Archivo no encontrado")
+    return FileResponse(file.file_path, filename=file.filename)
 
 
 def _latest_per_user(submissions: list[Submission]) -> list[Submission]:
