@@ -87,6 +87,7 @@ export default function AssignmentDetailPage() {
   const [activeSubmissionId, setActiveSubmissionId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [scanQrUrl, setScanQrUrl] = useState<string | null>(null);
+  const [historyShown, setHistoryShown] = useState(5);
 
   async function openScanModal() {
     const user = JSON.parse(localStorage.getItem("user")!) as { id: string };
@@ -268,7 +269,7 @@ export default function AssignmentDetailPage() {
               <div className="rounded-lg bg-darkgrey px-5 py-4">
                 <P className="mb-3 text-xs uppercase tracking-widest text-demigrey">Historial de entregas</P>
                 <ul className="divide-y divide-grey/20">
-                  {a.submission_history.map((s, idx) => (
+                  {a.submission_history.slice(0, historyShown).map((s, idx) => (
                     <li key={s.id} className="py-2 text-sm">
                       <div className="flex items-center justify-between">
                         <span className="text-white">{formatDate(s.created_at)}</span>
@@ -282,14 +283,29 @@ export default function AssignmentDetailPage() {
                       </div>
                       <ul className="mt-1 space-y-0.5">
                         {s.files.map((f) => (
-                          <li key={f.id} className="truncate text-xs text-demigrey">
-                            {f.filename}
+                          <li key={f.id}>
+                            <a
+                              href={`${API_BASE}/api/v1/submissions/files/${f.id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="truncate text-xs text-demigrey underline-offset-2 hover:text-white hover:underline"
+                            >
+                              📎 {f.filename}
+                            </a>
                           </li>
                         ))}
                       </ul>
                     </li>
                   ))}
                 </ul>
+                {historyShown < a.submission_history.length && (
+                  <button
+                    onClick={() => setHistoryShown((n) => n + 5)}
+                    className="mt-3 text-xs font-medium text-demigrey transition-colors hover:text-white"
+                  >
+                    Mostrar más
+                  </button>
+                )}
               </div>
             )}
 
