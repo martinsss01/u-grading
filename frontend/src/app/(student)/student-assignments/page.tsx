@@ -77,6 +77,23 @@ function formatDate(iso: string | null) {
   });
 }
 
+// Human-readable countdown to a due date, e.g. "2d 5h" or "45m". Only ever
+// shown for "Abierto" assignments, so a non-positive diff (due date passed
+// but the backend hasn't flipped the status to "Cerrado" yet) reads as
+// "Venciendo" rather than a confusing negative duration.
+function timeLeftLabel(dueIso: string, now: number): string {
+  const diffMinutes = Math.floor((new Date(dueIso).getTime() - now) / 60000);
+  if (diffMinutes <= 0) return "Venciendo";
+
+  const days = Math.floor(diffMinutes / (60 * 24));
+  const hours = Math.floor((diffMinutes % (60 * 24)) / 60);
+  const minutes = diffMinutes % 60;
+
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
+
 export default function StudentAssignmentsPage() {
   return (
     <Suspense fallback={null}>
@@ -96,6 +113,14 @@ function StudentAssignmentsContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<string[]>([]);
+  // Ticks once a minute so open assignments' countdowns stay live without a
+  // page reload.
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const raw = localStorage.getItem("user");
@@ -221,6 +246,11 @@ function StudentAssignmentsContent() {
                                 <P className="mt-0.5 text-xs text-demigrey">
                                   {a.section.semester} {a.section.year}
                                   {a.due_date ? ` · Entrega: ${formatDate(a.due_date)}` : ""}
+                                  {a.status === "Abierto" && a.due_date && (
+                                    <span className="ml-2 rounded-full bg-red/20 px-2 py-0.5 text-xs font-medium text-white">
+                                      Quedan {timeLeftLabel(a.due_date, now)}
+                                    </span>
+                                  )}
                                 </P>
                               </div>
                               <span className="w-10 text-right text-sm text-white">
