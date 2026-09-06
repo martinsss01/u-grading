@@ -14,7 +14,12 @@ function withOpacity(variableName: string) {
   };
 }
 
-const config: Config = {
+// Not typed as `Config` here: Tailwind resolves a function per color leaf at
+// build time (that's how the opacity-modifier support above works), but
+// Tailwind v3's types only allow a function for the whole colors object, not
+// per-leaf. Left untyped so `withOpacity`'s natural return type isn't forced
+// into a lie, and asserted as `Config` once below instead.
+const config = {
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -84,4 +89,4 @@ const config: Config = {
   },
   plugins: [],
 };
-export default config;
+export default config as unknown as Config;
