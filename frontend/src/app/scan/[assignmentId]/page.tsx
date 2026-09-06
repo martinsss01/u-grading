@@ -7,7 +7,9 @@ import { useParams, useSearchParams } from "next/navigation";
 // use, which needs native compilation we don't want in this container. This
 // is the pure client-side class, MIT licensed, unmodified.
 import jscanify from "@/lib/jscanify";
-import api from "@/lib/api";
+// Uses a tunnel-aware API client, not the shared one from "@/lib/api" — see
+// scanApi.ts for why.
+import api from "@/lib/scanApi";
 import { P } from "@/components/ui/p";
 
 // jscanify needs OpenCV.js's global `cv` loaded first. This exact build

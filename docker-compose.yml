@@ -35,9 +35,13 @@ services:
     ports:
       - "3001:3001"
     environment:
-      # Override with a backend tunnel URL (see EXTRA_CORS_ORIGINS above) when
-      # testing the phone-scan flow, so the phone isn't calling its own localhost.
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      # Always the local API — this is what login and the rest of the app
+      # use, and it must keep working whether or not any tunnel is up.
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      # Backend tunnel URL (see EXTRA_CORS_ORIGINS above), used ONLY by the
+      # phone-scan page (src/lib/scanApi.ts) so the phone isn't calling its
+      # own localhost. Leave unset outside of scan testing.
+      NEXT_PUBLIC_SCAN_API_URL: ${NEXT_PUBLIC_SCAN_API_URL:-}
       # The origin a phone should open for the QR "Escanear" link — a
       # frontend tunnel URL when testing; falls back to window.location.origin.
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-}
