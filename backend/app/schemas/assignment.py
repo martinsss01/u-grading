@@ -57,6 +57,7 @@ class SectionSummary(BaseModel):
     id: uuid.UUID
     semester: Semester
     year: int
+    section_number: int
 
     model_config = {"from_attributes": True}
 
