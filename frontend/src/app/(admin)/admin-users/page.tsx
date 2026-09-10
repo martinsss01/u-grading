@@ -7,6 +7,7 @@ import { P } from "@/components/ui/p";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RoleBadge } from "@/components/role-badge";
 
 const ROLES = ["Administrador", "Profesor", "Ayudante", "Estudiante"] as const;
@@ -27,6 +28,7 @@ export default function AdminUsersPage() {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<string>("Estudiante");
 
+  const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -63,6 +65,16 @@ export default function AdminUsersPage() {
     setError(null);
   }
 
+  function openNewForm() {
+    resetForm();
+    setShowForm(true);
+  }
+
+  function closeForm() {
+    resetForm();
+    setShowForm(false);
+  }
+
   function startEdit(u: User) {
     setName(u.name);
     setEmail(u.email);
@@ -71,6 +83,7 @@ export default function AdminUsersPage() {
     setEditingId(u.id);
     setConfirmDeleteId(null);
     setError(null);
+    setShowForm(true);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -88,7 +101,7 @@ export default function AdminUsersPage() {
       } else {
         await api.post("/api/v1/users/", { name, email, password, role });
       }
-      resetForm();
+      closeForm();
       await loadUsers();
     } catch (err) {
       const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
@@ -103,7 +116,7 @@ export default function AdminUsersPage() {
     try {
       await api.delete(`/api/v1/users/${id}`);
       setConfirmDeleteId(null);
-      if (editingId === id) resetForm();
+      if (editingId === id) closeForm();
       await loadUsers();
     } catch (err) {
       const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
@@ -115,20 +128,14 @@ export default function AdminUsersPage() {
 
   return (
     <main className="min-h-[calc(100vh-64px)] px-6 py-10">
-      <div className="mx-auto grid max-w-5xl gap-8 md:grid-cols-2">
+      <div className="mx-auto max-w-3xl">
 
-        {/* ── Form panel ── */}
-        <section className="rounded-lg bg-darkgrey p-8 shadow-lg">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-white">
-              {editingId ? "Editar Usuario" : "Nuevo Usuario"}
-            </h1>
-            {editingId && (
-              <button onClick={resetForm} className="text-sm text-demigrey hover:text-white">
-                Cancelar
-              </button>
-            )}
-          </div>
+        {/* ── Form modal ── */}
+        <Dialog open={showForm} onOpenChange={(open) => { if (!open) closeForm(); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingId ? "Editar Usuario" : "Nuevo Usuario"}</DialogTitle>
+          </DialogHeader>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <Field>
@@ -196,11 +203,20 @@ export default function AdminUsersPage() {
                 : editingId ? "Guardar cambios" : "Crear usuario"}
             </Button>
           </form>
-        </section>
+        </DialogContent>
+        </Dialog>
 
         {/* ── Users list ── */}
         <section className="rounded-lg bg-darkergrey p-8 shadow-lg">
-          <h2 className="text-xl font-bold text-white">Usuarios</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-white">Usuarios</h2>
+            <Button
+              onClick={openNewForm}
+              className="rounded-md bg-red px-4 py-2 text-sm font-semibold text-white hover:bg-red/80"
+            >
+              Agregar nuevo usuario
+            </Button>
+          </div>
 
           <div className="mt-4 flex gap-2">
             <Input
