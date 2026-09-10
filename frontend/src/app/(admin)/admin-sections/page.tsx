@@ -71,9 +71,27 @@ function AdminSectionsContent() {
     router.replace(qs ? `/admin-sections?${qs}` : "/admin-sections", { scroll: false });
   }
 
+  // Sections scoped to the currently selected courses (or all sections, if no
+  // course filter is active) - the Sección and Semestre filters only offer
+  // values that actually occur among these, since e.g. a course with just 2
+  // sections shouldn't offer "3" as a Sección option.
+  function sectionsForCourses(courseIds: string[]) {
+    return courseIds.length === 0
+      ? sections
+      : sections.filter((s) => courseIds.includes(s.course.id));
+  }
+
   function setCourseFilter(ids: string[]) {
+    const scoped = sectionsForCourses(ids);
+    const validNumbers = new Set(scoped.map((s) => s.section_number));
+    const validSemesters = new Set(scoped.map((s) => s.semester));
+    const prunedNumbers = selectedSectionNumbers.filter((n) => validNumbers.has(n));
+    const prunedSemesters = selectedSemesters.filter((s) => validSemesters.has(s));
+
     setSelectedCourseIdsState(ids);
-    syncFiltersUrl(ids, selectedSectionNumbers, selectedSemesters);
+    setSelectedSectionNumbersState(prunedNumbers);
+    setSelectedSemestersState(prunedSemesters);
+    syncFiltersUrl(ids, prunedNumbers, prunedSemesters);
   }
 
   function setSectionNumberFilter(nums: number[]) {
@@ -182,10 +200,14 @@ function AdminSectionsContent() {
   const courseOptions = [...new Map(sections.map((s) => [s.course.id, s.course])).values()]
     .sort((a, b) => a.name.localeCompare(b.name))
     .map((c) => ({ value: c.id, label: `${c.name} (${c.code})` }));
-  const sectionNumberOptions = [...new Set(sections.map((s) => s.section_number))]
+
+  const sectionsInScope = sectionsForCourses(selectedCourseIds);
+  const sectionNumberOptions = [...new Set(sectionsInScope.map((s) => s.section_number))]
     .sort((a, b) => a - b)
     .map((n) => ({ value: n, label: String(n) }));
-  const semesterOptions = SEMESTERS.map((s) => ({ value: s, label: s }));
+  const semesterOptions = SEMESTERS
+    .filter((sem) => sectionsInScope.some((s) => s.semester === sem))
+    .map((s) => ({ value: s, label: s }));
 
   const filteredSections = sections
     .filter((s) =>
