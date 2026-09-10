@@ -112,7 +112,7 @@ export default function AdminSectionDetailPage() {
   return (
     <main className="min-h-[calc(100vh-64px)] px-6 py-10">
       <div className="mx-auto max-w-3xl">
-        <button onClick={() => router.push("/admin-sections")} className="mb-6 text-sm text-demigrey hover:text-white">
+        <button onClick={() => router.back()} className="mb-6 text-sm text-demigrey hover:text-white">
           ← Volver a secciones
         </button>
 
