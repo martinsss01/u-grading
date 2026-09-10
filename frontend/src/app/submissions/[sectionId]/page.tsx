@@ -1,10 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { useRouter, useParams } from "next/navigation";
 import api from "@/lib/api";
 import { P } from "@/components/ui/p";
+import { courseCodeLabel } from "@/lib/course";
+import { RoleIcon } from "@/components/role-icon";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxTrigger,
+  ComboboxValue,
+} from "@/components/ui/combobox";
+import { Button } from "@/components/ui/button";
+import { XIcon } from "lucide-react";
 
 type Submission = {
   id: string;
@@ -23,6 +34,7 @@ type SectionSubmissions = {
     id: string;
     semester: string;
     year: number;
+    section_number: number;
     course: { id: string; name: string; code: string };
   };
   assignments: Assignment[];
@@ -54,6 +66,7 @@ export default function SectionSubmissionsPage() {
   const [data, setData] = useState<SectionSubmissions | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<string[]>([]);
 
   useEffect(() => {
     if (!localStorage.getItem("user")) {
@@ -68,9 +81,49 @@ export default function SectionSubmissionsPage() {
       .finally(() => setLoading(false));
   }, [sectionId, router]);
 
+  const filteredAssignments = data
+    ? data.assignments.filter((a) => typeFilter.length === 0 || typeFilter.includes(a.type))
+    : [];
+
   return (
     <main className="min-h-[calc(100vh-64px)] px-6 py-10">
       <div className="mx-auto max-w-3xl">
+        <div className="mb-8 flex items-center gap-2.5">
+          <RoleIcon role="Ayudante" className="size-7 shrink-0 object-contain" />
+          <h1 className="text-2xl font-bold text-white">Entregas</h1>
+
+          <Combobox multiple value={typeFilter} onValueChange={setTypeFilter}>
+            <ComboboxTrigger className="flex items-center gap-1.5 rounded-md bg-darkergrey px-3 py-2 text-sm text-white transition-colors hover:bg-darkergrey/70 focus-visible:border-red/50 focus-visible:ring-red/20">
+              <ComboboxValue placeholder="Todos los tipos">
+                {(value: string[]) =>
+                  value.length === 0 ? "Todos los tipos" : `Tipo (${value.length})`
+                }
+              </ComboboxValue>
+            </ComboboxTrigger>
+            <ComboboxContent>
+              <ComboboxList>
+                {TYPE_ORDER.map((type) => (
+                  <ComboboxItem key={type} value={type}>
+                    {TYPE_PLURAL[type] ?? type}
+                  </ComboboxItem>
+                ))}
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
+
+          {typeFilter.length > 0 && (
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              className="text-demigrey hover:text-white"
+              onClick={() => setTypeFilter([])}
+              aria-label="Limpiar filtro de tipos"
+            >
+              <XIcon />
+            </Button>
+          )}
+        </div>
+
         {loading && <P className="text-demigrey">Cargando...</P>}
 
         {error && (
@@ -80,52 +133,56 @@ export default function SectionSubmissionsPage() {
         )}
 
         {data && (
-          <>
-            <div className="mb-8 flex items-baseline gap-3">
-              <div className="flex items-center gap-2.5">
-                <span className="relative size-7 shrink-0">
-                  <Image src="/images/Ayudante.png" alt="" fill sizes="28px" quality={100} unoptimized className="object-contain" />
-                </span>
-                <h1 className="text-2xl font-bold text-white">Mis Ayudantías</h1>
-              </div>
+          <section className="rounded-lg bg-darkgrey shadow-lg">
+            <div className="rounded-t-lg bg-darkergrey px-6 py-4">
+              <h2 className="text-lg font-bold text-white">{data.section.course.name}</h2>
+              <P className="mt-0.5 text-sm text-demigrey">
+                {courseCodeLabel(data.section.course, data.section.section_number)} · {data.section.semester} {data.section.year}
+              </P>
             </div>
 
-            {data.assignments.length === 0 && (
-              <P className="text-demigrey">No hay evaluaciones en esta sección.</P>
-            )}
-
-            <div className="space-y-10">
-              {groupByType(data.assignments).map(([type, assignments]) => (
-                <div key={type}>
-                  <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-demigrey">
-                    {TYPE_PLURAL[type] ?? type}
-                  </h2>
-                  <div className="space-y-4">
-                    {assignments.map((assignment) => {
-                      const pending = assignment.submissions.filter((s) => s.needs_checking).length;
-                      return (
-                        <button
-                          key={assignment.id}
-                          onClick={() => router.push(`/submissions/${sectionId}/${assignment.id}`)}
-                          className="flex w-full items-center gap-3 rounded-lg bg-darkgrey px-6 py-4 text-left shadow-lg transition-colors hover:bg-darkgrey/80"
-                        >
-                          <h3 className="font-bold text-white">{assignment.title}</h3>
-                          <span className="ml-auto text-xs text-demigrey">
-                            {assignment.submissions.length} entrega{assignment.submissions.length !== 1 ? "s" : ""}
-                          </span>
-                          {pending > 0 && (
-                            <span className="rounded-full bg-red/20 px-2.5 py-0.5 text-xs font-medium text-red-400">
-                              {pending} por revisar
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
+            {filteredAssignments.length === 0 ? (
+              <P className="px-6 py-4 text-sm text-demigrey">
+                {data.assignments.length === 0
+                  ? "No hay evaluaciones en esta sección."
+                  : "No hay evaluaciones que coincidan con el filtro."}
+              </P>
+            ) : (
+              <div className="divide-y divide-grey/20">
+                {groupByType(filteredAssignments).map(([type, assignments]) => (
+                  <div key={type}>
+                    <P className="px-6 pt-4 pb-2 text-xs font-semibold uppercase tracking-widest text-demigrey">
+                      {TYPE_PLURAL[type] ?? type}
+                    </P>
+                    <ul>
+                      {assignments.map((assignment) => {
+                        const pending = assignment.submissions.filter((s) => s.needs_checking).length;
+                        return (
+                          <li key={assignment.id}>
+                            <button
+                              onClick={() => router.push(`/submissions/${sectionId}/${assignment.id}`)}
+                              className="group flex w-full items-center gap-4 px-6 py-3 text-left transition-colors hover:bg-darkergrey/50"
+                            >
+                              <h3 className="flex-1 font-medium text-white group-hover:text-white">{assignment.title}</h3>
+                              <span className="text-xs text-demigrey">
+                                {assignment.submissions.length} entrega{assignment.submissions.length !== 1 ? "s" : ""}
+                              </span>
+                              {pending > 0 && (
+                                <span className="rounded-full bg-red/20 px-2.5 py-0.5 text-xs font-medium text-red-400">
+                                  {pending} por revisar
+                                </span>
+                              )}
+                              <span className="text-demigrey transition-colors group-hover:text-white">→</span>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
                   </div>
-                </div>
-              ))}
-            </div>
-          </>
+                ))}
+              </div>
+            )}
+          </section>
         )}
       </div>
     </main>

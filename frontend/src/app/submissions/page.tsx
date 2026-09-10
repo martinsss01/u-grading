@@ -8,6 +8,16 @@ import { P } from "@/components/ui/p";
 import { RoleIcon } from "@/components/role-icon";
 import { courseCodeLabel } from "@/lib/course";
 import { SEMESTER } from "@/lib/semester";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxTrigger,
+  ComboboxValue,
+} from "@/components/ui/combobox";
+import { Button } from "@/components/ui/button";
+import { XIcon } from "lucide-react";
 
 type Section = {
   id: string;
@@ -50,6 +60,7 @@ export default function SubmissionsPage() {
   const [sections, setSections] = useState<Section[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [semesterFilter, setSemesterFilter] = useState<string[]>([]);
 
   useEffect(() => {
     const raw = localStorage.getItem("user");
@@ -66,6 +77,13 @@ export default function SubmissionsPage() {
       .finally(() => setLoading(false));
   }, [router]);
 
+  const allGroups = groupBySemester(sections);
+  const semesterOptions = allGroups.map((g) => ({ key: `${g.semester}-${g.year}`, label: g.label }));
+  const visibleGroups =
+    semesterFilter.length === 0
+      ? allGroups
+      : allGroups.filter((g) => semesterFilter.includes(`${g.semester}-${g.year}`));
+
   return (
     <main className="min-h-[calc(100vh-64px)] px-6 py-10">
       <div className="mx-auto max-w-3xl">
@@ -74,6 +92,39 @@ export default function SubmissionsPage() {
             <Image src="/images/TACourses.png" alt="" fill sizes="28px" quality={100} unoptimized className="object-contain" />
           </span>
           <h1 className="text-2xl font-bold text-white">Mis Ayudantías</h1>
+
+          {semesterOptions.length > 0 && (
+            <Combobox multiple value={semesterFilter} onValueChange={setSemesterFilter}>
+              <ComboboxTrigger className="flex items-center gap-1.5 rounded-md bg-darkergrey px-3 py-2 text-sm text-white transition-colors hover:bg-darkergrey/70 focus-visible:border-red/50 focus-visible:ring-red/20">
+                <ComboboxValue placeholder="Todos los semestres">
+                  {(value: string[]) =>
+                    value.length === 0 ? "Todos los semestres" : `Semestre (${value.length})`
+                  }
+                </ComboboxValue>
+              </ComboboxTrigger>
+              <ComboboxContent>
+                <ComboboxList>
+                  {semesterOptions.map((opt) => (
+                    <ComboboxItem key={opt.key} value={opt.key}>
+                      {opt.label}
+                    </ComboboxItem>
+                  ))}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
+          )}
+
+          {semesterFilter.length > 0 && (
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              className="text-demigrey hover:text-white"
+              onClick={() => setSemesterFilter([])}
+              aria-label="Limpiar filtro de semestres"
+            >
+              <XIcon />
+            </Button>
+          )}
         </div>
 
         {loading && <P className="text-demigrey">Cargando...</P>}
@@ -88,8 +139,12 @@ export default function SubmissionsPage() {
           <P className="text-demigrey">No estás asignado como ayudante en ninguna sección.</P>
         )}
 
+        {!loading && !error && sections.length > 0 && visibleGroups.length === 0 && (
+          <P className="text-demigrey">No hay ayudantías para los semestres seleccionados.</P>
+        )}
+
         <div className="space-y-6">
-          {groupBySemester(sections).map((group) => (
+          {visibleGroups.map((group) => (
             <section key={group.label}>
               <P className="mb-3 text-xs font-semibold uppercase tracking-widest text-demigrey">
                 {group.label}
