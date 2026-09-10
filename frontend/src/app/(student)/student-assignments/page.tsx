@@ -154,11 +154,17 @@ function StudentAssignmentsContent() {
     // an explicitly selected course/section keeps showing even if empty.
     .filter((g) => courseId || g.assignments.length > 0);
 
-  // The visible assignment list for a course may be filtered down to nothing
-  // (e.g. a course selected but no assignments this semester), so look up the
-  // section number from the unfiltered groups instead of the visible ones.
-  function sectionNumberForCourse(courseId: string) {
-    return groups.find((g) => g.course.id === courseId)?.assignments[0]?.section.section_number;
+  // All of a course's currently visible assignments share the same section
+  // (the list above already filters to one semester/section), so any of them
+  // gives the section/semester/year to show in the course header. When the
+  // visible list is filtered down to nothing (e.g. a course explicitly
+  // selected but with no assignments this semester), fall back to the
+  // unfiltered groups instead.
+  function sectionForCourse(courseId: string, visibleAssignments: Assignment[]) {
+    return (
+      visibleAssignments[0]?.section ??
+      groups.find((g) => g.course.id === courseId)?.assignments[0]?.section
+    );
   }
 
   return (
@@ -221,12 +227,15 @@ function StudentAssignmentsContent() {
         )}
 
         <div className="space-y-6">
-          {visibleGroups.map(({ course, assignments }) => (
+          {visibleGroups.map(({ course, assignments }) => {
+            const section = sectionForCourse(course.id, assignments);
+            return (
             <section key={course.id} className="rounded-lg bg-darkgrey shadow-lg">
               <div className="rounded-t-lg bg-darkergrey px-6 py-4">
                 <h2 className="text-lg font-bold text-white">{course.name}</h2>
                 <P className="mt-0.5 text-sm text-demigrey">
-                  {courseCodeLabel(course, sectionNumberForCourse(course.id))}
+                  {courseCodeLabel(course, section?.section_number)}
+                  {section && ` · ${section.semester} ${section.year}`}
                 </P>
               </div>
 
@@ -253,15 +262,16 @@ function StudentAssignmentsContent() {
                             >
                               <div className="flex-1">
                                 <P className="font-medium text-white group-hover:text-white">{a.title}</P>
-                                <P className="mt-0.5 text-xs text-demigrey">
-                                  {a.section.semester} {a.section.year}
-                                  {a.due_date ? ` · Entrega: ${formatDate(a.due_date)}` : ""}
-                                  {a.status === "Abierto" && a.due_date && (
-                                    <span className="ml-2 rounded-full bg-red/20 px-2 py-0.5 text-xs font-medium text-white">
-                                      Quedan {timeLeftLabel(a.due_date, now)}
-                                    </span>
-                                  )}
-                                </P>
+                                {a.due_date && (
+                                  <P className="mt-0.5 text-xs text-demigrey">
+                                    Entrega: {formatDate(a.due_date)}
+                                    {a.status === "Abierto" && (
+                                      <span className="ml-2 rounded-full bg-red/20 px-2 py-0.5 text-xs font-medium text-white">
+                                        Quedan {timeLeftLabel(a.due_date, now)}
+                                      </span>
+                                    )}
+                                  </P>
+                                )}
                               </div>
                               <span className="w-10 text-right text-sm text-white">
                                 {a.grade != null ? a.grade.toFixed(1) : "—"}
@@ -281,7 +291,8 @@ function StudentAssignmentsContent() {
                 </div>
               )}
             </section>
-          ))}
+            );
+          })}
         </div>
       </div>
     </main>

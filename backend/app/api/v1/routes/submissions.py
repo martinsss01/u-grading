@@ -115,6 +115,7 @@ async def list_section_submissions(section_id: uuid.UUID, db: AsyncSession = Dep
                 "id": a.id,
                 "title": a.title,
                 "type": a.type,
+                "due_date": a.due_date,
                 "submissions": _latest_per_user(a.submissions),
             }
             for a in assignments

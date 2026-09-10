@@ -56,14 +56,20 @@ export function StudentSidebar() {
           if (s.semester !== semester || s.year !== year) continue;
           if (!map.has(s.course.id)) map.set(s.course.id, { ...s.course, section_number: s.section_number });
         }
-        setCourses([...map.values()]);
+        setCourses([...map.values()].sort((a, b) => a.name.localeCompare(b.name)));
       })
       .catch(() => setCourses([]));
 
     api
       .get<Section[]>(`/api/v1/sections/ta/${user.id}`)
       .then((res) => {
-        setTaSections(res.data.filter((s) => s.semester === semester && s.year === year));
+        // A TA can be assigned to more than one section of the same course, so
+        // sort by course name first, then by section number within a course.
+        const current = res.data.filter((s) => s.semester === semester && s.year === year);
+        current.sort((a, b) =>
+          a.course.name.localeCompare(b.course.name) || a.section_number - b.section_number
+        );
+        setTaSections(current);
       })
       .catch(() => setTaSections([]));
   }, [semester, year]);

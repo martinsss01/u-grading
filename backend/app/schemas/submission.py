@@ -37,6 +37,7 @@ class AssignmentWithSubmissions(BaseModel):
     id: uuid.UUID
     title: str
     type: AssignmentType
+    due_date: datetime | None
     submissions: list[SubmissionRead]
 
 

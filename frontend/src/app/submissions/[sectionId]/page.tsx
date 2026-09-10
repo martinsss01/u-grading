@@ -26,6 +26,7 @@ type Assignment = {
   id: string;
   title: string;
   type: string;
+  due_date: string | null;
   submissions: Submission[];
 };
 
@@ -48,6 +49,18 @@ const TYPE_PLURAL: Record<string, string> = {
   Control: "Controles",
   Examen: "Exámenes",
 };
+
+function formatDate(iso: string | null) {
+  if (!iso) return null;
+  return new Date(iso).toLocaleDateString("es-CL", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
 
 function groupByType(assignments: Assignment[]): [string, Assignment[]][] {
   const map = new Map<string, Assignment[]>();
@@ -163,7 +176,14 @@ export default function SectionSubmissionsPage() {
                               onClick={() => router.push(`/submissions/${sectionId}/${assignment.id}`)}
                               className="group flex w-full items-center gap-4 px-6 py-3 text-left transition-colors hover:bg-darkergrey/50"
                             >
-                              <h3 className="flex-1 font-medium text-white group-hover:text-white">{assignment.title}</h3>
+                              <div className="flex-1">
+                                <h3 className="font-medium text-white group-hover:text-white">{assignment.title}</h3>
+                                {assignment.due_date && (
+                                  <P className="mt-0.5 text-xs text-demigrey">
+                                    Entrega: {formatDate(assignment.due_date)}
+                                  </P>
+                                )}
+                              </div>
                               <span className="text-xs text-demigrey">
                                 {assignment.submissions.length} entrega{assignment.submissions.length !== 1 ? "s" : ""}
                               </span>
