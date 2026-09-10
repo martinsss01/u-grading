@@ -104,6 +104,7 @@ class StudentAssignment(BaseModel):
     title: str
     type: AssignmentType
     status: AssignmentStatus
+    open_date: datetime | None
     due_date: datetime | None
     section: SectionSummary
     grade: float | None = None

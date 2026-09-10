@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import QRCode from "qrcode";
 import api from "@/lib/api";
 import { P } from "@/components/ui/p";
+import { computeAssignmentStatus } from "@/lib/assignment";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 // The origin a phone should use to reach this app — override with a tunnel
@@ -191,7 +192,11 @@ export default function AssignmentDetailPage() {
   }, [assignmentId, router]);
 
   const a = assignment;
-  const canUpload = a?.status === "Abierto";
+  // Recomputed from open_date/due_date against the ticking `now` (below)
+  // rather than trusting `a.status`, which is frozen at whatever the server
+  // returned when the page loaded — this lets it flip live without a reload.
+  const status = a ? computeAssignmentStatus(a.open_date, a.due_date, now) : null;
+  const canUpload = status === "Abierto";
   const hasGrades = a?.answer_grades?.some((g) => g.grade != null) ?? false;
 
   return (
@@ -218,9 +223,9 @@ export default function AssignmentDetailPage() {
               <div className="flex items-start justify-between gap-4">
                 <h1 className="text-2xl font-bold text-white">{a.title}</h1>
                 <span
-                  className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[a.status] ?? "bg-grey/20 text-lemigrey"}`}
+                  className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[status ?? ""] ?? "bg-grey/20 text-lemigrey"}`}
                 >
-                  {a.status}
+                  {status}
                 </span>
               </div>
               <P className="mt-1 text-sm text-demigrey">
@@ -238,7 +243,7 @@ export default function AssignmentDetailPage() {
               <div className="rounded-lg bg-darkgrey px-5 py-4">
                 <div className="flex items-center gap-2">
                   <P className="text-xs uppercase tracking-widest text-demigrey">Fecha de entrega</P>
-                  {a.status === "Abierto" && a.due_date && (
+                  {status === "Abierto" && a.due_date && (
                     <span className="rounded-full bg-red/20 px-2 py-0.5 text-xs font-medium text-white">
                       Queda {timeLeftLabel(a.due_date, now)}
                     </span>
@@ -304,7 +309,7 @@ export default function AssignmentDetailPage() {
                   disabled
                   className="cursor-not-allowed rounded-md bg-grey/20 px-3 py-1.5 text-xs font-medium text-demigrey"
                 >
-                  {a.status === "Pendiente" ? "Aún no disponible" : "Fecha de entrega finalizada"}
+                  {status === "Pendiente" ? "Aún no disponible" : "Fecha de entrega finalizada"}
                 </button>
               )}
 

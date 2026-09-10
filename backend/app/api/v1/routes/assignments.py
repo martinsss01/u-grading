@@ -80,6 +80,7 @@ async def list_student_assignments(user_id: uuid.UUID, db: AsyncSession = Depend
             "title": a.title,
             "type": a.type,
             "status": a.status,
+            "open_date": a.open_date,
             "due_date": a.due_date,
             "section": a.section,
             "grade": grade_map.get(a.id),

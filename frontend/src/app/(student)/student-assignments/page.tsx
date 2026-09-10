@@ -7,6 +7,7 @@ import api from "@/lib/api";
 import { P } from "@/components/ui/p";
 import { courseCodeLabel } from "@/lib/course";
 import { getCurrentSemester } from "@/lib/semester";
+import { computeAssignmentStatus } from "@/lib/assignment";
 import {
   Combobox,
   ComboboxContent,
@@ -30,6 +31,7 @@ type Assignment = {
   title: string;
   type: string;
   status: string;
+  open_date: string | null;
   due_date: string | null;
   section: Section;
   grade: number | null;
@@ -254,37 +256,40 @@ function StudentAssignmentsContent() {
                         <span className="w-4" />
                       </div>
                       <ul>
-                        {items.map((a) => (
-                          <li key={a.id}>
-                            <button
-                              onClick={() => router.push(`/student-assignments/${a.id}`)}
-                              className="group flex w-full items-center gap-4 px-6 py-3 text-left transition-colors hover:bg-darkergrey/50"
-                            >
-                              <div className="flex-1">
-                                <P className="font-medium text-white group-hover:text-white">{a.title}</P>
-                                {a.due_date && (
-                                  <P className="mt-0.5 text-xs text-demigrey">
-                                    Entrega: {formatDate(a.due_date)}
-                                    {a.status === "Abierto" && (
-                                      <span className="ml-2 rounded-full bg-red/20 px-2 py-0.5 text-xs font-medium text-white">
-                                        Quedan {timeLeftLabel(a.due_date, now)}
-                                      </span>
-                                    )}
-                                  </P>
-                                )}
-                              </div>
-                              <span className="w-10 text-right text-sm text-white">
-                                {a.grade != null ? a.grade.toFixed(1) : "—"}
-                              </span>
-                              <span
-                                className={`w-28 shrink-0 rounded-full px-2.5 py-0.5 text-center text-xs font-medium ${STATUS_COLORS[a.status] ?? "bg-grey/20 text-lemigrey"}`}
+                        {items.map((a) => {
+                          const status = computeAssignmentStatus(a.open_date, a.due_date, now);
+                          return (
+                            <li key={a.id}>
+                              <button
+                                onClick={() => router.push(`/student-assignments/${a.id}`)}
+                                className="group flex w-full items-center gap-4 px-6 py-3 text-left transition-colors hover:bg-darkergrey/50"
                               >
-                                {a.status}
-                              </span>
-                              <span className="text-demigrey transition-colors group-hover:text-white">→</span>
-                            </button>
-                          </li>
-                        ))}
+                                <div className="flex-1">
+                                  <P className="font-medium text-white group-hover:text-white">{a.title}</P>
+                                  {a.due_date && (
+                                    <P className="mt-0.5 text-xs text-demigrey">
+                                      Entrega: {formatDate(a.due_date)}
+                                      {status === "Abierto" && (
+                                        <span className="ml-2 rounded-full bg-red/20 px-2 py-0.5 text-xs font-medium text-white">
+                                          Quedan {timeLeftLabel(a.due_date, now)}
+                                        </span>
+                                      )}
+                                    </P>
+                                  )}
+                                </div>
+                                <span className="w-10 text-right text-sm text-white">
+                                  {a.grade != null ? a.grade.toFixed(1) : "—"}
+                                </span>
+                                <span
+                                  className={`w-28 shrink-0 rounded-full px-2.5 py-0.5 text-center text-xs font-medium ${STATUS_COLORS[status] ?? "bg-grey/20 text-lemigrey"}`}
+                                >
+                                  {status}
+                                </span>
+                                <span className="text-demigrey transition-colors group-hover:text-white">→</span>
+                              </button>
+                            </li>
+                          );
+                        })}
                       </ul>
                     </div>
                   ))}
