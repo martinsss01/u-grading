@@ -11,6 +11,7 @@ import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MultiSelectFilter } from "@/components/ui/multi-select-filter";
+import { SearchableMultiSelectFilter } from "@/components/ui/searchable-multi-select-filter";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const SEMESTERS = [SEMESTER.FALL, SEMESTER.SPRING, SEMESTER.SUMMER] as const;
@@ -61,20 +62,29 @@ function AdminSectionsContent() {
   const [selectedSemesters, setSelectedSemestersState] = useState<string[]>(() =>
     parseListParam("semesters")
   );
+  const [selectedYears, setSelectedYearsState] = useState<number[]>(() =>
+    parseListParam("years").map(Number)
+  );
 
-  function syncFiltersUrl(courseIds: string[], sectionNumbers: number[], semesters: string[]) {
+  function syncFiltersUrl(
+    courseIds: string[],
+    sectionNumbers: number[],
+    semesters: string[],
+    years: number[]
+  ) {
     const params = new URLSearchParams();
     if (courseIds.length > 0) params.set("courses", courseIds.join(","));
     if (sectionNumbers.length > 0) params.set("sectionNumbers", sectionNumbers.join(","));
     if (semesters.length > 0) params.set("semesters", semesters.join(","));
+    if (years.length > 0) params.set("years", years.join(","));
     const qs = params.toString();
     router.replace(qs ? `/admin-sections?${qs}` : "/admin-sections", { scroll: false });
   }
 
   // Sections scoped to the currently selected courses (or all sections, if no
-  // course filter is active) - the Sección and Semestre filters only offer
-  // values that actually occur among these, since e.g. a course with just 2
-  // sections shouldn't offer "3" as a Sección option.
+  // course filter is active) - the Sección, Semestre, and Año filters only
+  // offer values that actually occur among these, since e.g. a course with
+  // just 2 sections shouldn't offer "3" as a Sección option.
   function sectionsForCourses(courseIds: string[]) {
     return courseIds.length === 0
       ? sections
@@ -85,24 +95,46 @@ function AdminSectionsContent() {
     const scoped = sectionsForCourses(ids);
     const validNumbers = new Set(scoped.map((s) => s.section_number));
     const validSemesters = new Set(scoped.map((s) => s.semester));
+    const validYears = new Set(scoped.map((s) => s.year));
     const prunedNumbers = selectedSectionNumbers.filter((n) => validNumbers.has(n));
     const prunedSemesters = selectedSemesters.filter((s) => validSemesters.has(s));
+    const prunedYears = selectedYears.filter((y) => validYears.has(y));
 
     setSelectedCourseIdsState(ids);
     setSelectedSectionNumbersState(prunedNumbers);
     setSelectedSemestersState(prunedSemesters);
-    syncFiltersUrl(ids, prunedNumbers, prunedSemesters);
+    setSelectedYearsState(prunedYears);
+    syncFiltersUrl(ids, prunedNumbers, prunedSemesters, prunedYears);
   }
 
   function setSectionNumberFilter(nums: number[]) {
     setSelectedSectionNumbersState(nums);
-    syncFiltersUrl(selectedCourseIds, nums, selectedSemesters);
+    syncFiltersUrl(selectedCourseIds, nums, selectedSemesters, selectedYears);
   }
 
   function setSemesterFilter(sems: string[]) {
     setSelectedSemestersState(sems);
-    syncFiltersUrl(selectedCourseIds, selectedSectionNumbers, sems);
+    syncFiltersUrl(selectedCourseIds, selectedSectionNumbers, sems, selectedYears);
   }
+
+  function setYearFilter(years: number[]) {
+    setSelectedYearsState(years);
+    syncFiltersUrl(selectedCourseIds, selectedSectionNumbers, selectedSemesters, years);
+  }
+
+  function clearFilters() {
+    setSelectedCourseIdsState([]);
+    setSelectedSectionNumbersState([]);
+    setSelectedSemestersState([]);
+    setSelectedYearsState([]);
+    syncFiltersUrl([], [], [], []);
+  }
+
+  const hasActiveFilters =
+    selectedCourseIds.length > 0 ||
+    selectedSectionNumbers.length > 0 ||
+    selectedSemesters.length > 0 ||
+    selectedYears.length > 0;
 
   async function loadData() {
     const [sectionsRes, coursesRes] = await Promise.all([
@@ -208,12 +240,16 @@ function AdminSectionsContent() {
   const semesterOptions = SEMESTERS
     .filter((sem) => sectionsInScope.some((s) => s.semester === sem))
     .map((s) => ({ value: s, label: s }));
+  const yearOptions = [...new Set(sectionsInScope.map((s) => s.year))]
+    .sort((a, b) => b - a)
+    .map((y) => ({ value: y, label: String(y) }));
 
   const filteredSections = sections
     .filter((s) =>
       (selectedCourseIds.length === 0 || selectedCourseIds.includes(s.course.id)) &&
       (selectedSectionNumbers.length === 0 || selectedSectionNumbers.includes(s.section_number)) &&
-      (selectedSemesters.length === 0 || selectedSemesters.includes(s.semester))
+      (selectedSemesters.length === 0 || selectedSemesters.includes(s.semester)) &&
+      (selectedYears.length === 0 || selectedYears.includes(s.year))
     )
     .sort((a, b) =>
       b.year - a.year ||
@@ -317,13 +353,16 @@ function AdminSectionsContent() {
             </Button>
           </div>
 
-          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <MultiSelectFilter
+          <div className="mt-4">
+            <SearchableMultiSelectFilter
               label="Curso"
               options={courseOptions}
               selected={selectedCourseIds}
               onChange={setCourseFilter}
             />
+          </div>
+
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
             <MultiSelectFilter
               label="Sección"
               options={sectionNumberOptions}
@@ -336,7 +375,22 @@ function AdminSectionsContent() {
               selected={selectedSemesters}
               onChange={setSemesterFilter}
             />
+            <MultiSelectFilter
+              label="Año"
+              options={yearOptions}
+              selected={selectedYears}
+              onChange={setYearFilter}
+            />
           </div>
+
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="mt-3 text-xs text-demigrey hover:text-white"
+            >
+              Limpiar filtros
+            </button>
+          )}
 
           {loading && <P className="mt-4 text-sm text-demigrey">Cargando...</P>}
           {loadError && <P className="mt-4 text-sm text-red/80">{loadError}</P>}

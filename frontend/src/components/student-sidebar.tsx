@@ -19,15 +19,18 @@ type Section = {
   id: string;
   semester: string;
   year: number;
+  section_number: number;
   course: Course;
 };
+
+type CourseWithSection = Course & { section_number: number };
 
 export function StudentSidebar() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeCourseId = searchParams.get("courseId");
   const { sectionId: activeSectionId } = useParams<{ sectionId?: string }>();
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [courses, setCourses] = useState<CourseWithSection[]>([]);
   const [taSections, setTaSections] = useState<Section[]>([]);
   const [globalRole, setGlobalRole] = useState<string | null>(null);
   const { semester, year } = getCurrentSemester();
@@ -48,10 +51,10 @@ export function StudentSidebar() {
     api
       .get<Section[]>(`/api/v1/sections/student/${user.id}`)
       .then((res) => {
-        const map = new Map<string, Course>();
+        const map = new Map<string, CourseWithSection>();
         for (const s of res.data) {
           if (s.semester !== semester || s.year !== year) continue;
-          if (!map.has(s.course.id)) map.set(s.course.id, s.course);
+          if (!map.has(s.course.id)) map.set(s.course.id, { ...s.course, section_number: s.section_number });
         }
         setCourses([...map.values()]);
       })
@@ -139,7 +142,7 @@ export function StudentSidebar() {
               >
                 {c.name}
               </span>
-              <span className="text-xs text-demigrey">{courseCodeLabel(c)}</span>
+              <span className="text-xs text-demigrey">{courseCodeLabel(c, c.section_number)}</span>
             </div>
           </button>
         ))}
@@ -158,7 +161,7 @@ export function StudentSidebar() {
               >
                 {s.course.name}
               </span>
-              <span className="text-xs text-demigrey">{courseCodeLabel(s.course)}</span>
+              <span className="text-xs text-demigrey">{courseCodeLabel(s.course, s.section_number)}</span>
             </div>
           </button>
         ))}

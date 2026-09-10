@@ -22,6 +22,7 @@ type Section = {
   id: string;
   semester: string;
   year: number;
+  section_number: number;
 };
 
 type Assignment = {
@@ -153,6 +154,13 @@ function StudentAssignmentsContent() {
     // an explicitly selected course/section keeps showing even if empty.
     .filter((g) => courseId || g.assignments.length > 0);
 
+  // The visible assignment list for a course may be filtered down to nothing
+  // (e.g. a course selected but no assignments this semester), so look up the
+  // section number from the unfiltered groups instead of the visible ones.
+  function sectionNumberForCourse(courseId: string) {
+    return groups.find((g) => g.course.id === courseId)?.assignments[0]?.section.section_number;
+  }
+
   return (
     <main className="min-h-[calc(100vh-64px)] px-6 py-10">
       <div className="mx-auto max-w-3xl">
@@ -217,7 +225,9 @@ function StudentAssignmentsContent() {
             <section key={course.id} className="rounded-lg bg-darkgrey shadow-lg">
               <div className="rounded-t-lg bg-darkergrey px-6 py-4">
                 <h2 className="text-lg font-bold text-white">{course.name}</h2>
-                <P className="mt-0.5 text-sm text-demigrey">{courseCodeLabel(course)}</P>
+                <P className="mt-0.5 text-sm text-demigrey">
+                  {courseCodeLabel(course, sectionNumberForCourse(course.id))}
+                </P>
               </div>
 
               {assignments.length === 0 ? (
