@@ -256,19 +256,21 @@ export default function AssignmentDetailPage() {
               </div>
             </div>
 
-            {a.rubric && (
-              <div className="rounded-lg bg-darkgrey px-5 py-4">
-                <P className="mb-2 text-xs uppercase tracking-widest text-demigrey">Descripción y criterios</P>
-                <P className="whitespace-pre-wrap text-sm text-white">{a.rubric}</P>
-              </div>
-            )}
+            <div className="rounded-lg bg-darkgrey px-5 py-4">
+              <P className="mb-2 text-xs uppercase tracking-widest text-demigrey">Descripción y criterios</P>
+              <P className={`whitespace-pre-wrap text-sm ${a.rubric ? "text-white" : "text-demigrey"}`}>
+                {a.rubric || "Sin descripción"}
+              </P>
+            </div>
 
-            {a.filename && (
-              <div className="flex items-center justify-between rounded-lg bg-darkgrey px-5 py-4">
-                <div className="min-w-0">
-                  <P className="text-xs uppercase tracking-widest text-demigrey">Material de la evaluación</P>
-                  <P className="mt-1 truncate text-sm text-white">{a.filename}</P>
-                </div>
+            <div className="flex items-center justify-between rounded-lg bg-darkgrey px-5 py-4">
+              <div className="min-w-0">
+                <P className="text-xs uppercase tracking-widest text-demigrey">Material de la evaluación</P>
+                <P className={`mt-1 truncate text-sm ${a.filename ? "text-white" : "text-demigrey"}`}>
+                  {a.filename || "Sin archivos"}
+                </P>
+              </div>
+              {a.filename && (
                 <a
                   href={`${API_BASE}/api/v1/assignments/${a.id}/file`}
                   target="_blank"
@@ -277,8 +279,8 @@ export default function AssignmentDetailPage() {
                 >
                   Descargar
                 </a>
-              </div>
-            )}
+              )}
+            </div>
 
             <div className="flex justify-start">
               {canUpload && (
