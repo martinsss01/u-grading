@@ -38,8 +38,10 @@ class AssignmentWithSubmissions(BaseModel):
     title: str
     type: AssignmentType
     status: AssignmentStatus
+    rubric: str | None
     open_date: datetime | None
     due_date: datetime | None
+    filename: str | None
     submissions: list[SubmissionRead]
 
 
