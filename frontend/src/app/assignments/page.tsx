@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { P } from "@/components/ui/p";
+import { Paperclip } from "lucide-react";
 import { Field, FieldLabel, FieldTitle } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -376,9 +377,10 @@ export default function AssignmentsPage() {
                         href={`${API_BASE}/api/v1/assignments/${a.id}/file`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="truncate text-xs text-demigrey hover:text-white"
+                        className="inline-flex min-w-0 items-center gap-1 text-xs text-demigrey hover:text-white"
                       >
-                        📎 {a.filename}
+                        <Paperclip className="size-3.5 shrink-0" />
+                        <span className="truncate">{a.filename}</span>
                       </a>
                     )}
                   </div>

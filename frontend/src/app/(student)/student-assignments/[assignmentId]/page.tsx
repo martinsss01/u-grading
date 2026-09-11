@@ -6,6 +6,7 @@ import QRCode from "qrcode";
 import api from "@/lib/api";
 import { P } from "@/components/ui/p";
 import { computeAssignmentStatus } from "@/lib/assignment";
+import { Paperclip } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 // The origin a phone should use to reach this app — override with a tunnel
@@ -331,7 +332,10 @@ export default function AssignmentDetailPage() {
                 <ul className="divide-y divide-grey/20">
                   {pendingFiles.map((p) => (
                     <li key={p.id} className="flex items-center justify-between gap-3 py-2 text-sm">
-                      <span className="truncate text-white">📎 {p.file.name}</span>
+                      <span className="inline-flex min-w-0 items-center gap-1.5 text-white">
+                        <Paperclip className="size-3.5 shrink-0" />
+                        <span className="truncate">{p.file.name}</span>
+                      </span>
                       <button
                         onClick={() => removePendingFile(p.id)}
                         disabled={uploading}
@@ -376,9 +380,10 @@ export default function AssignmentDetailPage() {
                               href={`${API_BASE}/api/v1/submissions/files/${f.id}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="truncate text-xs text-demigrey underline-offset-2 hover:text-white hover:underline"
+                              className="inline-flex min-w-0 items-center gap-1 text-xs text-demigrey underline-offset-2 hover:text-white hover:underline"
                             >
-                              📎 {f.filename}
+                              <Paperclip className="size-3.5 shrink-0" />
+                              <span className="truncate">{f.filename}</span>
                             </a>
                           </li>
                         ))}

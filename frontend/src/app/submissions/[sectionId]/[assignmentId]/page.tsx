@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import api from "@/lib/api";
 import { P } from "@/components/ui/p";
 import { computeAssignmentStatus } from "@/lib/assignment";
+import { Paperclip } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -242,9 +243,10 @@ export default function AssignmentSubmissionsPage() {
                                     href={`${API_BASE}/api/v1/submissions/files/${f.id}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="truncate text-xs text-demigrey underline-offset-2 hover:text-white hover:underline"
+                                    className="inline-flex min-w-0 items-center gap-1 text-xs text-demigrey underline-offset-2 hover:text-white hover:underline"
                                   >
-                                    📎 {f.filename}
+                                    <Paperclip className="size-3.5 shrink-0" />
+                                    <span className="truncate">{f.filename}</span>
                                   </a>
                                 </li>
                               ))}
