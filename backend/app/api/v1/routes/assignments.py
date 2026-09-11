@@ -33,7 +33,7 @@ async def list_student_assignments(user_id: uuid.UUID, db: AsyncSession = Depend
         select(Assignment)
         .join(Assignment.section)
         .join(Section.members)
-        .where(SectionMember.user_id == user_id)
+        .where(SectionMember.user_id == user_id, SectionMember.role == Role.STUDENT)
         .options(
             selectinload(Assignment.section).selectinload(Section.course),
         )
@@ -84,6 +84,42 @@ async def list_student_assignments(user_id: uuid.UUID, db: AsyncSession = Depend
             "due_date": a.due_date,
             "section": a.section,
             "grade": grade_map.get(a.id),
+        })
+
+    return [{"course": course_map[cid], "assignments": grouped[cid]} for cid in course_map]
+
+
+@router.get("/ta/{user_id}", response_model=list[CourseAssignments])
+async def list_ta_assignments(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    stmt = (
+        select(Assignment)
+        .join(Assignment.section)
+        .join(Section.members)
+        .where(SectionMember.user_id == user_id, SectionMember.role == Role.TA)
+        .options(
+            selectinload(Assignment.section).selectinload(Section.course),
+        )
+        .order_by(Assignment.created_at)
+    )
+    result = await db.execute(stmt)
+    assignments = result.scalars().all()
+
+    grouped: dict[str, list] = defaultdict(list)
+    course_map = {}
+    for a in assignments:
+        cid = str(a.section.course.id)
+        if cid not in course_map:
+            course_map[cid] = a.section.course
+        grouped[cid].append({
+            "id": a.id,
+            "title": a.title,
+            "type": a.type,
+            "status": a.status,
+            "open_date": a.open_date,
+            "due_date": a.due_date,
+            "section": a.section,
+            # Not meaningful for a TA's own view of the assignment.
+            "grade": None,
         })
 
     return [{"course": course_map[cid], "assignments": grouped[cid]} for cid in course_map]

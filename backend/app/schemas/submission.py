@@ -3,7 +3,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from app.models.enums import AssignmentType
+from app.models.enums import AssignmentStatus, AssignmentType
 from app.schemas.section import SectionRead
 
 
@@ -37,6 +37,8 @@ class AssignmentWithSubmissions(BaseModel):
     id: uuid.UUID
     title: str
     type: AssignmentType
+    status: AssignmentStatus
+    open_date: datetime | None
     due_date: datetime | None
     submissions: list[SubmissionRead]
 

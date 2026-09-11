@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import api from "@/lib/api";
 import { P } from "@/components/ui/p";
 import { courseCodeLabel } from "@/lib/course";
+import { computeAssignmentStatus } from "@/lib/assignment";
 import { RoleIcon } from "@/components/role-icon";
 import {
   Combobox,
@@ -26,6 +27,7 @@ type Assignment = {
   id: string;
   title: string;
   type: string;
+  open_date: string | null;
   due_date: string | null;
   submissions: Submission[];
 };
@@ -39,6 +41,12 @@ type SectionSubmissions = {
     course: { id: string; name: string; code: string };
   };
   assignments: Assignment[];
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  Pendiente: "bg-grey/30 text-lemigrey",
+  Abierto: "bg-green-500/20 text-green-400",
+  Cerrado: "bg-red/20 text-red-400",
 };
 
 const TYPE_ORDER = ["Tarea", "Ejercicio", "Control", "Examen"];
@@ -80,6 +88,14 @@ export default function SectionSubmissionsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<string[]>([]);
+  // Ticks once a minute so a status computed from open_date/due_date (see
+  // computeAssignmentStatus) stays live without a page reload.
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (!localStorage.getItem("user")) {
@@ -164,12 +180,17 @@ export default function SectionSubmissionsPage() {
               <div className="divide-y divide-grey/20">
                 {groupByType(filteredAssignments).map(([type, assignments]) => (
                   <div key={type}>
-                    <P className="px-6 pt-4 pb-2 text-xs font-semibold uppercase tracking-widest text-demigrey">
-                      {TYPE_PLURAL[type] ?? type}
-                    </P>
+                    <div className="flex items-center gap-4 px-6 pt-4 pb-2">
+                      <P className="flex-1 text-xs font-semibold uppercase tracking-widest text-demigrey">
+                        {TYPE_PLURAL[type] ?? type}
+                      </P>
+                      <span className="w-28 shrink-0 text-center text-xs uppercase tracking-widest text-demigrey">Estado</span>
+                      <span className="w-4" />
+                    </div>
                     <ul>
                       {assignments.map((assignment) => {
                         const pending = assignment.submissions.filter((s) => s.needs_checking).length;
+                        const status = computeAssignmentStatus(assignment.open_date, assignment.due_date, now);
                         return (
                           <li key={assignment.id}>
                             <button
@@ -192,6 +213,11 @@ export default function SectionSubmissionsPage() {
                                   {pending} por revisar
                                 </span>
                               )}
+                              <span
+                                className={`w-28 shrink-0 rounded-full px-2.5 py-0.5 text-center text-xs font-medium ${STATUS_COLORS[status] ?? "bg-grey/20 text-lemigrey"}`}
+                              >
+                                {status}
+                              </span>
                               <span className="text-demigrey transition-colors group-hover:text-white">→</span>
                             </button>
                           </li>

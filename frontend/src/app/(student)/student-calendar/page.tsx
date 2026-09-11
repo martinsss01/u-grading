@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { P } from "@/components/ui/p";
+import { RoleIcon } from "@/components/role-icon";
 
 type Section = {
   id: string;
@@ -28,7 +29,7 @@ type CourseGroup = {
   assignments: Assignment[];
 };
 
-type DueAssignment = Assignment & { courseName: string; courseCode: string };
+type DueAssignment = Assignment & { courseName: string; courseCode: string; role: "Estudiante" | "Ayudante" };
 
 const STATUS_COLORS: Record<string, string> = {
   Pendiente: "bg-grey/30 text-lemigrey",
@@ -51,6 +52,16 @@ function isSameDay(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
+function groupByDay(assignments: DueAssignment[]) {
+  const map = new Map<string, DueAssignment[]>();
+  for (const a of assignments) {
+    const key = dayKey(new Date(a.due_date!));
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(a);
+  }
+  return map;
+}
+
 export default function StudentCalendarPage() {
   const router = useRouter();
   const [cursor, setCursor] = useState(() => {
@@ -70,29 +81,33 @@ export default function StudentCalendarPage() {
     }
     const user = JSON.parse(raw) as { id: string };
 
-    api
-      .get<CourseGroup[]>(`/api/v1/assignments/student/${user.id}`)
-      .then((res) => {
-        const flat = res.data.flatMap((g) =>
-          g.assignments
-            .filter((a) => a.due_date)
-            .map((a) => ({ ...a, courseName: g.course.name, courseCode: g.course.code }))
-        );
-        setAssignments(flat);
+    function flatten(groups: CourseGroup[], role: "Estudiante" | "Ayudante"): DueAssignment[] {
+      return groups.flatMap((g) =>
+        g.assignments
+          .filter((a) => a.due_date)
+          .map((a) => ({ ...a, courseName: g.course.name, courseCode: g.course.code, role }))
+      );
+    }
+
+    Promise.all([
+      api.get<CourseGroup[]>(`/api/v1/assignments/student/${user.id}`),
+      api.get<CourseGroup[]>(`/api/v1/assignments/ta/${user.id}`),
+    ])
+      .then(([studentRes, taRes]) => {
+        setAssignments([
+          ...flatten(studentRes.data, "Estudiante"),
+          ...flatten(taRes.data, "Ayudante"),
+        ]);
       })
       .catch(() => setError("No se pudieron cargar las evaluaciones."))
       .finally(() => setLoading(false));
   }, [router]);
 
-  const dueByDay = useMemo(() => {
-    const map = new Map<string, DueAssignment[]>();
-    for (const a of assignments) {
-      const key = dayKey(new Date(a.due_date!));
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(a);
-    }
-    return map;
-  }, [assignments]);
+  // Split by role rather than one merged map: a student badge (orange) and a
+  // TA badge (purple) are shown separately on each day, since the same day
+  // can have assignments due as a student and others closing as a TA.
+  const dueByDayStudent = useMemo(() => groupByDay(assignments.filter((a) => a.role === "Estudiante")), [assignments]);
+  const dueByDayTA = useMemo(() => groupByDay(assignments.filter((a) => a.role === "Ayudante")), [assignments]);
 
   const today = new Date();
   const year = cursor.getFullYear();
@@ -110,7 +125,12 @@ export default function StudentCalendarPage() {
     });
   }, [year, month]);
 
-  const selectedItems = selectedDay ? dueByDay.get(dayKey(selectedDay)) ?? [] : [];
+  const selectedItems = selectedDay
+    ? [
+        ...(dueByDayStudent.get(dayKey(selectedDay)) ?? []),
+        ...(dueByDayTA.get(dayKey(selectedDay)) ?? []),
+      ]
+    : [];
 
   return (
     <main className="min-h-[calc(100vh-64px)] px-6 py-10">
@@ -175,7 +195,9 @@ export default function StudentCalendarPage() {
 
                   {cells.map((date) => {
                     const inMonth = date.getMonth() === month;
-                    const count = dueByDay.get(dayKey(date))?.length ?? 0;
+                    const studentCount = dueByDayStudent.get(dayKey(date))?.length ?? 0;
+                    const taCount = dueByDayTA.get(dayKey(date))?.length ?? 0;
+                    const hasItems = studentCount > 0 || taCount > 0;
                     const isToday = isSameDay(date, today);
                     const isSelected = selectedDay && isSameDay(date, selectedDay);
 
@@ -183,11 +205,11 @@ export default function StudentCalendarPage() {
                       <Button
                         key={date.toISOString()}
                         variant="ghost"
-                        onClick={() => (count > 0 ? setSelectedDay(date) : setSelectedDay(null))}
+                        onClick={() => (hasItems ? setSelectedDay(date) : setSelectedDay(null))}
                         className={`h-auto aspect-square flex-col items-center justify-start gap-1 rounded-md bg-darkergrey/70 p-1.5 pt-2 text-sm ${
                           inMonth ? "text-white" : "text-demigrey/40"
                         } ${isSelected ? "bg-darkergrey ring-1 ring-red" : "hover:bg-darkergrey"} ${
-                          count > 0 ? "cursor-pointer" : "cursor-default"
+                          hasItems ? "cursor-pointer" : "cursor-default"
                         }`}
                       >
                         <span
@@ -197,9 +219,19 @@ export default function StudentCalendarPage() {
                         >
                           {date.getDate()}
                         </span>
-                        {count > 0 && (
-                          <span className="flex size-5 items-center justify-center rounded-full bg-red text-xs font-semibold text-white">
-                            {count}
+                        {hasItems && (
+                          <span className="flex items-center gap-1">
+                            {studentCount > 0 && (
+                              <span className="flex size-5 items-center justify-center rounded-full bg-[#F3CE62] text-xs font-semibold text-black">
+                                {studentCount}
+                              </span>
+                            )}
+                            {taCount > 0 && (
+                              // #D6ADF6
+                              <span className="flex size-5 items-center justify-center rounded-full bg-[#D6ADF6] text-xs font-semibold text-black">
+                                {taCount}
+                              </span>
+                            )}
                           </span>
                         )}
                       </Button>
@@ -228,10 +260,17 @@ export default function StudentCalendarPage() {
                     <li key={a.id}>
                       <Button
                         variant="ghost"
-                        onClick={() => router.push(`/student-assignments/${a.id}`)}
+                        onClick={() =>
+                          router.push(
+                            a.role === "Ayudante"
+                              ? `/submissions/${a.section.id}/${a.id}`
+                              : `/student-assignments/${a.id}`
+                          )
+                        }
                         className="h-auto w-full flex-col items-start rounded-md bg-darkergrey px-3 py-2 text-left hover:bg-darkergrey/70"
                       >
                         <div className="flex w-full items-center gap-2">
+                          <RoleIcon role={a.role} className="size-4 shrink-0 object-contain" />
                           <P className="min-w-0 flex-1 truncate text-sm font-medium text-white">{a.title}</P>
                           <span
                             className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS_COLORS[a.status] ?? "bg-grey/20 text-lemigrey"}`}
