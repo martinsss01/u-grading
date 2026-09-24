@@ -1,18 +1,28 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import QRCode from "qrcode";
 import api from "@/lib/api";
 import { P } from "@/components/ui/p";
 import { computeAssignmentStatus } from "@/lib/assignment";
-import { Paperclip } from "lucide-react";
+import { Link2, Paperclip } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 // The origin a phone should use to reach this app — override with a tunnel
 // URL (see docker-compose.yml) when testing the scan flow from a real phone,
 // since the phone can't resolve "localhost" as this machine.
 const APP_ORIGIN = process.env.NEXT_PUBLIC_APP_URL;
+// Types the backend can turn into the review PDF (see
+// backend/app/services/pdf_conversion.py); anything else would only show
+// up as a "can't preview" page for the TA.
+const ACCEPTED_FILES = [
+  ".pdf", "image/*", ".ipynb", ".txt", ".md", ".csv", ".tsv", ".json", ".xml", ".yaml", ".yml",
+  ".py", ".r", ".java", ".c", ".h", ".cpp", ".hpp", ".cc", ".cs", ".js", ".jsx", ".ts", ".tsx",
+  ".go", ".rs", ".rb", ".php", ".sql", ".sh", ".m", ".jl", ".hs", ".kt", ".swift", ".scala",
+  ".tex", ".html", ".css",
+].join(",");
 
 type Question = {
   id: string;
@@ -111,7 +121,13 @@ export default function AssignmentDetailPage() {
   // Files picked via "Subir archivo"/"Agregar otro archivo", staged locally
   // and shown to the student before they're actually sent — nothing here
   // hits the backend until "Subir" is pressed.
-  const [pendingFiles, setPendingFiles] = useState<{ id: string; file: File }[]>([]);
+  // A Colab link is staged the same way; the backend snapshots the notebook
+  // when it's submitted.
+  const [pendingFiles, setPendingFiles] = useState<
+    ({ id: string; file: File; url?: never } | { id: string; url: string; file?: never })[]
+  >([]);
+  const [colabOpen, setColabOpen] = useState(false);
+  const [colabUrl, setColabUrl] = useState("");
   // Ticks once a minute so the "Queda(n)" countdown below stays live without
   // a page reload.
   const [now, setNow] = useState(() => Date.now());
@@ -135,6 +151,14 @@ export default function AssignmentDetailPage() {
     setPendingFiles((cur) => [...cur, { id: crypto.randomUUID(), file }]);
   }
 
+  function addColabLink() {
+    const url = colabUrl.trim();
+    if (!url) return;
+    setPendingFiles((cur) => [...cur, { id: crypto.randomUUID(), url }]);
+    setColabUrl("");
+    setColabOpen(false);
+  }
+
   function removePendingFile(id: string) {
     setPendingFiles((cur) => cur.filter((p) => p.id !== id));
   }
@@ -149,7 +173,17 @@ export default function AssignmentDetailPage() {
       // Uploaded one at a time so they all land in the same submission —
       // the first response's id groups every file after it.
       let submissionId = activeSubmissionId;
-      for (const { file } of pendingFiles) {
+      for (const { file, url } of pendingFiles) {
+        if (url !== undefined) {
+          const colabRes = await api.post<Submission>("/api/v1/submissions/colab", {
+            assignment_id: assignmentId,
+            user_id: user.id,
+            url,
+            submission_id: submissionId,
+          });
+          submissionId = colabRes.data.id;
+          continue;
+        }
         const formData = new FormData();
         formData.append("assignment_id", assignmentId);
         formData.append("user_id", user.id);
@@ -170,8 +204,10 @@ export default function AssignmentDetailPage() {
         params: { user_id: user.id },
       });
       setAssignment(res.data);
-    } catch {
-      setError("No se pudo subir el archivo.");
+    } catch (err) {
+      // The Colab endpoint explains what's wrong (e.g. the notebook isn't shared).
+      const detail = (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
+      setError(typeof detail === "string" ? detail : "No se pudo subir el archivo.");
     } finally {
       setUploading(false);
     }
@@ -287,6 +323,7 @@ export default function AssignmentDetailPage() {
                 <>
                   <input
                     type="file"
+                    accept={ACCEPTED_FILES}
                     ref={fileInputRef}
                     onChange={handleFileChange}
                     className="hidden"
@@ -303,6 +340,13 @@ export default function AssignmentDetailPage() {
                     className="ml-3 rounded-md bg-darkgrey px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-grey/30"
                   >
                     Escanear
+                  </button>
+                  <button
+                    onClick={() => setColabOpen((o) => !o)}
+                    disabled={uploading}
+                    className="ml-3 rounded-md bg-darkgrey px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-grey/30 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Enlace de Colab
                   </button>
                 </>
               )}
@@ -326,6 +370,33 @@ export default function AssignmentDetailPage() {
               )}
             </div>
 
+            {canUpload && colabOpen && (
+              <div className="rounded-lg bg-darkgrey px-5 py-4">
+                <P className="mb-2 text-xs uppercase tracking-widest text-demigrey">Notebook de Google Colab</P>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={colabUrl}
+                    onChange={(e) => setColabUrl(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && addColabLink()}
+                    placeholder="https://colab.research.google.com/drive/..."
+                    autoFocus
+                    className="min-w-0 flex-1 rounded-md bg-darkergrey px-3 py-1.5 text-sm text-white outline-none placeholder:text-demigrey focus:ring-1 focus:ring-red"
+                  />
+                  <button
+                    onClick={addColabLink}
+                    disabled={!colabUrl.trim()}
+                    className="shrink-0 rounded-md bg-red px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red/80 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Agregar
+                  </button>
+                </div>
+                <P className="mt-2 text-xs text-demigrey">
+                  Compártelo como &quot;Cualquier persona con el enlace&quot;. Se guarda una copia del notebook al subir la entrega.
+                </P>
+              </div>
+            )}
+
             {canUpload && pendingFiles.length > 0 && (
               <div className="rounded-lg bg-darkgrey px-5 py-4">
                 <P className="mb-2 text-xs uppercase tracking-widest text-demigrey">
@@ -335,14 +406,14 @@ export default function AssignmentDetailPage() {
                   {pendingFiles.map((p) => (
                     <li key={p.id} className="flex items-center justify-between gap-3 py-2 text-sm">
                       <span className="inline-flex min-w-0 items-center gap-1.5 text-white">
-                        <Paperclip className="size-3.5 shrink-0" />
-                        <span className="truncate">{p.file.name}</span>
+                        {p.file ? <Paperclip className="size-3.5 shrink-0" /> : <Link2 className="size-3.5 shrink-0" />}
+                        <span className="truncate">{p.file?.name ?? p.url}</span>
                       </span>
                       <button
                         onClick={() => removePendingFile(p.id)}
                         disabled={uploading}
                         className="shrink-0 text-xs text-demigrey transition-colors hover:text-red disabled:cursor-not-allowed disabled:opacity-60"
-                        aria-label={`Quitar ${p.file.name}`}
+                        aria-label={`Quitar ${p.file?.name ?? p.url}`}
                       >
                         ✕
                       </button>
@@ -367,6 +438,12 @@ export default function AssignmentDetailPage() {
                     <li key={s.id} className="py-2 text-sm">
                       <div className="flex items-center justify-between">
                         <span className="text-white">{formatDate(s.created_at)}</span>
+                        <Link
+                          href={`/student-assignments/${assignmentId}/${s.id}`}
+                          className="ml-auto mr-3 text-xs font-medium text-demigrey underline-offset-2 hover:text-white hover:underline"
+                        >
+                          Ver entrega
+                        </Link>
                         <span
                           className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
                             idx === 0 ? "bg-green-500/20 text-green-400" : "bg-grey/30 text-lemigrey"

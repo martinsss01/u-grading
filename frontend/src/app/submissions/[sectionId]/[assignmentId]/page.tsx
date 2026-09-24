@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import api from "@/lib/api";
 import { P } from "@/components/ui/p";
@@ -229,6 +230,7 @@ export default function AssignmentSubmissionsPage() {
                         <th className="pb-2 font-medium">Fecha</th>
                         <th className="pb-2 font-medium">Estado</th>
                         <th className="pb-2 text-right font-medium">Nota</th>
+                        <th className="pb-2" />
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-grey/20">
@@ -268,6 +270,14 @@ export default function AssignmentSubmissionsPage() {
                           </td>
                           <td className="py-2.5 text-right text-white">
                             {averageGrade(sub.answers)}
+                          </td>
+                          <td className="py-2.5 pl-3 text-right">
+                            <Link
+                              href={`/submissions/${sectionId}/${assignmentId}/${sub.id}`}
+                              className="rounded-md bg-red px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red/80"
+                            >
+                              Revisar
+                            </Link>
                           </td>
                         </tr>
                       ))}
