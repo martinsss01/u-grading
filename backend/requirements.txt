@@ -9,3 +9,11 @@ pydantic-settings==2.14.2
 python-dotenv==1.2.2
 bcrypt==4.3.0
 python-multipart==0.0.20
+httpx==0.28.1
+pypdf==6.1.1
+img2pdf==0.6.1
+pillow==11.3.0
+pygments==2.19.2
+nbformat==5.10.4
+nbconvert==7.16.6
+weasyprint==66.0

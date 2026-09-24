@@ -1,5 +1,9 @@
 FROM python:3.12-slim
 WORKDIR /app
+# Pango + fonts for WeasyPrint (code/notebook -> PDF conversion).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libpango-1.0-0 libpangoft2-1.0-0 fonts-dejavu-core \
+    && rm -rf /var/lib/apt/lists/*
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
