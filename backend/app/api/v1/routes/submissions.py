@@ -51,7 +51,7 @@ router = APIRouter()
 
 async def _open_assignment(db: AsyncSession, assignment_id: uuid.UUID) -> Assignment:
     assignment = await db.get(Assignment, assignment_id)
-    if assignment is None:
+    if assignment is None or not assignment.statement_published:
         raise HTTPException(status_code=404, detail="Assignment not found")
 
     status = assignment.status
@@ -255,6 +255,11 @@ async def list_annotations(
     statuses = ["published"]
     if await can_review_assignment(db, viewer_id, submission.assignment_id):
         statuses.append("suggested")
+    else:
+        # Students see their TA's comments only once the professor publishes the review.
+        assignment = await db.get(Assignment, submission.assignment_id)
+        if not assignment.review_published:
+            return []
     result = await db.execute(
         select(SubmissionAnnotation)
         .where(SubmissionAnnotation.submission_id == submission_id, SubmissionAnnotation.status.in_(statuses))

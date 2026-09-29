@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text, Uuid, func, text
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text, Uuid, false, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -47,6 +47,10 @@ class Assignment(Base):
     guideline_filename: Mapped[str | None] = mapped_column(String)
     # Set when the AI pipeline was started for this assignment (on close, or manually).
     pipeline_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Professor-controlled visibility for students: "Publicar enunciado" shows the
+    # assignment itself; "Publicar corrección" shows their grades and TA comments.
+    statement_published: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
+    review_published: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
 
     section: Mapped["Section"] = relationship(back_populates="assignments")
     questions: Mapped[list["Question"]] = relationship(back_populates="assignment")

@@ -37,7 +37,11 @@ async def list_student_assignments(user_id: uuid.UUID, db: AsyncSession = Depend
         select(Assignment)
         .join(Assignment.section)
         .join(Section.members)
-        .where(SectionMember.user_id == user_id, SectionMember.role == Role.STUDENT)
+        .where(
+            SectionMember.user_id == user_id,
+            SectionMember.role == Role.STUDENT,
+            Assignment.statement_published.is_(True),
+        )
         .options(
             selectinload(Assignment.section).selectinload(Section.course),
         )
@@ -87,7 +91,7 @@ async def list_student_assignments(user_id: uuid.UUID, db: AsyncSession = Depend
             "open_date": a.open_date,
             "due_date": a.due_date,
             "section": a.section,
-            "grade": grade_map.get(a.id),
+            "grade": grade_map.get(a.id) if a.review_published else None,
         })
 
     return [{"course": course_map[cid], "assignments": grouped[cid]} for cid in course_map]
@@ -152,7 +156,15 @@ async def get_assignment(assignment_id: uuid.UUID, user_id: uuid.UUID | None = N
             selectinload(Assignment.section).selectinload(Section.course),
         )
     )
-    assignment = result.scalar_one()
+    assignment = result.scalar_one_or_none()
+    if assignment is None:
+        raise HTTPException(status_code=404)
+
+    # Students only get what the professor published; staff always see everything.
+    is_staff = await can_review_assignment(db, user_id, assignment_id)
+    if not is_staff and not assignment.statement_published:
+        raise HTTPException(status_code=404)
+    show_review = is_staff or assignment.review_published
 
     answer_grades = None
     submission_history: list[SubmissionRead] = []
@@ -163,7 +175,7 @@ async def get_assignment(assignment_id: uuid.UUID, user_id: uuid.UUID | None = N
             .where(Submission.assignment_id == assignment_id, Submission.user_id == user_id)
         )
         ans_rows = await db.execute(ans_stmt)
-        answer_grades = [{"question_id": qid, "grade": grade} for qid, grade in ans_rows.all()]
+        answer_grades = [{"question_id": qid, "grade": grade} for qid, grade in ans_rows.all()] if show_review else None
 
         sub_stmt = (
             select(Submission)
@@ -173,6 +185,8 @@ async def get_assignment(assignment_id: uuid.UUID, user_id: uuid.UUID | None = N
         )
         sub_result = await db.execute(sub_stmt)
         submission_history = [SubmissionRead.model_validate(s) for s in sub_result.scalars().all()]
+        if not show_review:
+            submission_history = [s.model_copy(update={"answers": []}) for s in submission_history]
 
     detail = AssignmentDetail.model_validate(assignment)
     return detail.model_copy(update={"answer_grades": answer_grades, "submission_history": submission_history})
@@ -252,6 +266,8 @@ async def create_assignment(payload: AssignmentCreate, db: AsyncSession = Depend
         rubric=payload.rubric,
         open_date=payload.open_date,
         due_date=payload.due_date,
+        statement_published=payload.statement_published,
+        review_published=payload.review_published,
         questions=[
             Question(number=q.number, description=q.description, max_points=q.max_points)
             for q in payload.questions

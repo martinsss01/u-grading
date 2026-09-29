@@ -35,6 +35,8 @@ type Assignment = {
   rubric: string | null;
   filename: string | null;
   guideline_filename: string | null;
+  statement_published: boolean;
+  review_published: boolean;
 };
 
 // Converts an ISO due_date into the `yyyy-MM-ddThh:mm` format the native
@@ -59,6 +61,9 @@ export default function AssignmentsPage() {
   const [openDate, setOpenDate] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [rubric, setRubric] = useState("");
+  // What students can see: the assignment itself, and their grades/TA comments.
+  const [statementPublished, setStatementPublished] = useState(false);
+  const [reviewPublished, setReviewPublished] = useState(false);
   // The file to upload on submit, plus the name of whatever file the
   // assignment already has attached (shown while editing).
   const [assignmentFile, setAssignmentFile] = useState<File | null>(null);
@@ -99,6 +104,8 @@ export default function AssignmentsPage() {
     setOpenDate("");
     setDueDate("");
     setRubric("");
+    setStatementPublished(false);
+    setReviewPublished(false);
     setAssignmentFile(null);
     setCurrentFilename(null);
     setGuidelineFile(null);
@@ -114,6 +121,8 @@ export default function AssignmentsPage() {
     setOpenDate(isoToDatetimeLocal(a.open_date));
     setDueDate(isoToDatetimeLocal(a.due_date));
     setRubric(a.rubric ?? "");
+    setStatementPublished(a.statement_published);
+    setReviewPublished(a.review_published);
     setAssignmentFile(null);
     setCurrentFilename(a.filename);
     setGuidelineFile(null);
@@ -139,10 +148,12 @@ export default function AssignmentsPage() {
       if (editingId) {
         await api.patch(`/api/v1/assignments/${editingId}`, {
           title, type, rubric: rubric || null, open_date: openDateIso, due_date: dueDateIso,
+          statement_published: statementPublished, review_published: reviewPublished,
         });
       } else {
         const res = await api.post<Assignment>("/api/v1/assignments/", {
           section_id: sectionId, title, type, rubric: rubric || null, open_date: openDateIso, due_date: dueDateIso,
+          statement_published: statementPublished, review_published: reviewPublished,
         });
         assignmentId = res.data.id;
       }
@@ -347,6 +358,34 @@ export default function AssignmentsPage() {
               </div>
             </Field>
 
+            <Field>
+              <FieldTitle className="text-white">Visibilidad para estudiantes</FieldTitle>
+              <label className="mt-2 flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={statementPublished}
+                  onChange={(e) => setStatementPublished(e.target.checked)}
+                  className="mt-0.5 size-4 shrink-0 accent-red"
+                />
+                <span>
+                  <span className="block text-sm text-white">Publicar enunciado</span>
+                  <span className="block text-xs text-demigrey">Los estudiantes de la sección ven la evaluación y pueden entregar.</span>
+                </span>
+              </label>
+              <label className="mt-2 flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={reviewPublished}
+                  onChange={(e) => setReviewPublished(e.target.checked)}
+                  className="mt-0.5 size-4 shrink-0 accent-red"
+                />
+                <span>
+                  <span className="block text-sm text-white">Publicar corrección</span>
+                  <span className="block text-xs text-demigrey">Los estudiantes ven sus notas y los comentarios de los ayudantes.</span>
+                </span>
+              </label>
+            </Field>
+
             {error && <P className="text-sm text-red/80">{error}</P>}
 
             <Button
@@ -415,7 +454,13 @@ export default function AssignmentsPage() {
                     </div>
                   </div>
                   <div className="mt-2 flex items-center justify-between gap-3">
-                    <P className="text-xs text-demigrey">Estado: {a.status}</P>
+                    <P className="text-xs text-demigrey">
+                      Estado: {a.status}
+                      {" · "}
+                      {a.statement_published ? "Enunciado publicado" : "Enunciado oculto"}
+                      {" · "}
+                      {a.review_published ? "Corrección publicada" : "Corrección oculta"}
+                    </P>
                     <Link
                       href={`/assignments/${a.id}`}
                       className="ml-auto text-xs font-medium text-demigrey underline-offset-2 hover:text-white hover:underline"

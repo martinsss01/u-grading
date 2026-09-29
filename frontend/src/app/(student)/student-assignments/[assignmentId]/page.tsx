@@ -58,6 +58,7 @@ type Assignment = {
   due_date: string | null;
   created_at: string;
   filename: string | null;
+  review_published: boolean;
   questions: Question[];
   section: {
     id: string;
@@ -505,6 +506,12 @@ export default function AssignmentDetailPage() {
                   </button>
                 )}
               </div>
+            )}
+
+            {!a.review_published && a.submission_history.length > 0 && (
+              <P className="rounded-lg bg-darkgrey px-5 py-4 text-sm text-demigrey">
+                La corrección aún no ha sido publicada por el profesor.
+              </P>
             )}
 
             {hasGrades && a.questions.length > 0 && (

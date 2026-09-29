@@ -26,6 +26,8 @@ class AssignmentCreate(BaseModel):
     rubric: str | None = None
     open_date: datetime | None = None
     due_date: datetime | None = None
+    statement_published: bool = False
+    review_published: bool = False
     questions: list[QuestionCreate] = Field(default_factory=list)
 
 
@@ -42,6 +44,8 @@ class AssignmentRead(BaseModel):
     filename: str | None
     # Private grading guideline (teachers/TAs only); the file itself is access-checked.
     guideline_filename: str | None = None
+    statement_published: bool
+    review_published: bool
     questions: list[QuestionRead]
 
     model_config = {"from_attributes": True}
@@ -90,6 +94,7 @@ class AssignmentDetail(BaseModel):
     due_date: datetime | None
     created_at: datetime
     filename: str | None
+    review_published: bool
     questions: list[QuestionRead]
     section: SectionWithCourse
     answer_grades: list[QuestionGrade] | None = None
@@ -125,4 +130,6 @@ class AssignmentUpdate(BaseModel):
     rubric: str | None = None
     open_date: datetime | None = None
     due_date: datetime | None = None
+    statement_published: bool | None = None
+    review_published: bool | None = None
     questions: list[QuestionCreate] | None = None

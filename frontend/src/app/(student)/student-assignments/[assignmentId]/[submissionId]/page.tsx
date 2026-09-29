@@ -8,6 +8,7 @@ import { PdfReviewer } from "@/components/pdf-review";
 
 type Assignment = {
   title: string;
+  review_published: boolean;
   submission_history: { id: string }[];
 };
 
@@ -38,6 +39,11 @@ export default function StudentSubmissionViewPage() {
       </div>
       {error && <P className="p-6 text-sm text-red">{error}</P>}
       {assignment && !owned && <P className="p-6 text-sm text-demigrey">No se encontró la entrega.</P>}
+      {owned && !assignment?.review_published && (
+        <P className="border-b border-grey/30 px-6 py-2 text-sm text-demigrey">
+          La corrección aún no ha sido publicada. Verás los comentarios de los ayudantes cuando el profesor la publique.
+        </P>
+      )}
       {owned && (
         <div className="min-h-0 flex-1">
           <PdfReviewer submissionId={submissionId} readOnly />
