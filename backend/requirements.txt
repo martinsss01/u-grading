@@ -17,3 +17,4 @@ pygments==2.19.2
 nbformat==5.10.4
 nbconvert==7.16.6
 weasyprint==66.0
+pypdfium2==4.30.0

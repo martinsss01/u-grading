@@ -40,6 +40,8 @@ class AssignmentRead(BaseModel):
     due_date: datetime | None
     created_at: datetime
     filename: str | None
+    # Private grading guideline (teachers/TAs only); the file itself is access-checked.
+    guideline_filename: str | None = None
     questions: list[QuestionRead]
 
     model_config = {"from_attributes": True}

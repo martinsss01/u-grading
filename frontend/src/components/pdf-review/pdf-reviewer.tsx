@@ -1,17 +1,25 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ExternalLink, Minus, Plus, SquareDashed, Type } from "lucide-react";
+import { EyeOff, ExternalLink, Minus, Plus, Sparkles, SquareDashed, Type } from "lucide-react";
 import { P } from "@/components/ui/p";
 import {
   type Annotation,
   type AnnotationDraft,
   type DocumentStatus,
+  type Rect,
+  type Redaction,
+  acceptSuggestion,
   createAnnotation,
+  createRedaction,
   deleteAnnotation,
+  deleteRedaction,
+  dismissSuggestion,
   documentPdfUrl,
   getDocumentStatus,
   listAnnotations,
+  listRedactions,
+  markAnonymizationChecked,
   rebuildDocument,
   sortAnnotations,
   updateAnnotation,
@@ -33,7 +41,23 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleString("es-CL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 
-export default function PdfReviewer({ submissionId, readOnly }: { submissionId: string; readOnly: boolean }) {
+/** AI pipeline results shown to the teaching staff above the comments. */
+export type ReviewInfo = {
+  summary: string | null;
+  difficulty: number | null;
+  difficultyReason: string | null;
+  needsAnonymizationCheck: boolean;
+};
+
+export default function PdfReviewer({
+  submissionId,
+  readOnly,
+  review,
+}: {
+  submissionId: string;
+  readOnly: boolean;
+  review?: ReviewInfo;
+}) {
   // Never server-rendered (see index.tsx), so localStorage is safe here.
   const [userId] = useState(readUserId);
   const [doc, setDoc] = useState<DocumentStatus | null>(null);
@@ -50,6 +74,9 @@ export default function PdfReviewer({ submissionId, readOnly }: { submissionId: 
   const [zoomIdx, setZoomIdx] = useState(2);
   const [viewportWidth, setViewportWidth] = useState(0);
   const draftInputRef = useRef<HTMLTextAreaElement | null>(null);
+  const [redactions, setRedactions] = useState<Redaction[]>([]);
+  const [censoring, setCensoring] = useState(false);
+  const [needsCheck, setNeedsCheck] = useState(review?.needsAnonymizationCheck ?? false);
 
   // Poll while the backend is still (re)building the merged PDF.
   useEffect(() => {
@@ -74,10 +101,51 @@ export default function PdfReviewer({ submissionId, readOnly }: { submissionId: 
   }, [submissionId, pollKey]);
 
   useEffect(() => {
-    listAnnotations(submissionId)
+    listAnnotations(submissionId, userId)
       .then((list) => setAnnotations(sortAnnotations(list)))
       .catch(() => setActionError("No se pudieron cargar los comentarios."));
-  }, [submissionId]);
+  }, [submissionId, userId]);
+
+  useEffect(() => {
+    if (tool !== "censor" || !userId) return;
+    listRedactions(submissionId, userId)
+      .then(setRedactions)
+      .catch(() => setActionError("No se pudieron cargar las censuras."));
+  }, [tool, submissionId, userId]);
+
+  /** Redactions change the anonymized PDF; refetch its status so the viewer reloads it. */
+  async function applyRedactionChange(change: () => Promise<Redaction[]>) {
+    setCensoring(true);
+    setActionError(null);
+    try {
+      setRedactions(await change());
+      setDoc(await getDocumentStatus(submissionId));
+    } catch {
+      setActionError("No se pudo actualizar la censura.");
+    } finally {
+      setCensoring(false);
+    }
+  }
+
+  function handleCensor(page: number, rect: Rect) {
+    if (!userId) return;
+    applyRedactionChange(() => createRedaction(submissionId, userId, page, [rect]));
+  }
+
+  function handleDeleteRedaction(id: string) {
+    if (!userId || !window.confirm("¿Quitar esta censura? Lo que cubre volverá a verse.")) return;
+    applyRedactionChange(() => deleteRedaction(id, userId));
+  }
+
+  async function confirmAnonymization() {
+    if (!userId) return;
+    try {
+      await markAnonymizationChecked(submissionId, userId);
+      setNeedsCheck(false);
+    } catch {
+      setActionError("No se pudo marcar como revisada.");
+    }
+  }
 
   const viewportRef = useCallback((el: HTMLDivElement | null) => {
     if (!el) return;
@@ -131,7 +199,11 @@ export default function PdfReviewer({ submissionId, readOnly }: { submissionId: 
     setSaving(true);
     setActionError(null);
     try {
-      const updated = await updateAnnotation(editing.id, userId, editing.text.trim());
+      // Editing a pending AI suggestion publishes it, reworded, as this TA's comment.
+      const isSuggestion = annotations.find((a) => a.id === editing.id)?.status === "suggested";
+      const updated = isSuggestion
+        ? await acceptSuggestion(editing.id, userId, editing.text.trim())
+        : await updateAnnotation(editing.id, userId, editing.text.trim());
       setAnnotations((cur) => cur.map((a) => (a.id === updated.id ? updated : a)));
       setEditing(null);
     } catch {
@@ -149,6 +221,28 @@ export default function PdfReviewer({ submissionId, readOnly }: { submissionId: 
       setAnnotations((cur) => cur.filter((a) => a.id !== id));
     } catch {
       setActionError("No se pudo borrar el comentario.");
+    }
+  }
+
+  async function accept(id: string) {
+    if (!userId) return;
+    setActionError(null);
+    try {
+      const updated = await acceptSuggestion(id, userId);
+      setAnnotations((cur) => cur.map((a) => (a.id === id ? updated : a)));
+    } catch {
+      setActionError("No se pudo aceptar la sugerencia.");
+    }
+  }
+
+  async function dismiss(id: string) {
+    if (!userId) return;
+    setActionError(null);
+    try {
+      await dismissSuggestion(id, userId);
+      setAnnotations((cur) => cur.filter((a) => a.id !== id));
+    } catch {
+      setActionError("No se pudo descartar la sugerencia.");
     }
   }
 
@@ -175,6 +269,7 @@ export default function PdfReviewer({ submissionId, readOnly }: { submissionId: 
                 [
                   ["text", Type, "Resaltar texto"],
                   ["area", SquareDashed, "Marcar área"],
+                  ["censor", EyeOff, "Censurar"],
                 ] as const
               ).map(([value, Icon, label]) => (
                 <button
@@ -240,6 +335,11 @@ export default function PdfReviewer({ submissionId, readOnly }: { submissionId: 
               </button>
             </div>
           )}
+          {censoring && (
+            <P className="sticky top-0 z-40 bg-darkgrey/95 px-4 py-2 text-center text-xs text-lemigrey">
+              Actualizando el PDF anonimizado...
+            </P>
+          )}
           {ready && viewportWidth > 0 && (
             <PdfPages
               url={documentPdfUrl(submissionId, doc.updated_at)}
@@ -250,6 +350,9 @@ export default function PdfReviewer({ submissionId, readOnly }: { submissionId: 
               draft={draft}
               onSelect={handleSelect}
               onAnnotationClick={handleAnnotationClick}
+              redactions={redactions}
+              onCensor={handleCensor}
+              onDeleteRedaction={handleDeleteRedaction}
             />
           )}
         </div>
@@ -260,13 +363,53 @@ export default function PdfReviewer({ submissionId, readOnly }: { submissionId: 
           <P className="text-xs uppercase tracking-widest text-demigrey">Comentarios ({annotations.length})</P>
           {!readOnly && !draft && (
             <P className="mt-1 text-xs text-demigrey">
-              {tool === "text" ? "Selecciona texto del PDF para comentarlo." : "Arrastra sobre el PDF para marcar un área."}
+              {tool === "text"
+                ? "Selecciona texto del PDF para comentarlo."
+                : tool === "area"
+                  ? "Arrastra sobre el PDF para marcar un área."
+                  : "Arrastra sobre algo que identifique al estudiante para taparlo. Con × quitas una censura."}
             </P>
           )}
         </div>
 
         <div className="flex-1 space-y-3 overflow-auto px-4 py-3">
           {actionError && <P className="text-xs text-red">{actionError}</P>}
+
+          {!readOnly && needsCheck && (
+            <div className="rounded-md border border-yellow-500/50 bg-yellow-500/10 p-3">
+              <P className="text-xs text-yellow-200">
+                La anonimización automática podría haber dejado datos del estudiante a la vista. Revisa el PDF y
+                usa <strong>Censurar</strong> si ves su nombre.
+              </P>
+              <button
+                onClick={confirmAnonymization}
+                className="mt-2 rounded-md bg-darkergrey px-2.5 py-1 text-xs font-medium text-white hover:bg-grey/30"
+              >
+                Ya lo revisé
+              </button>
+            </div>
+          )}
+
+          {!readOnly && review && (review.summary || review.difficulty != null) && (
+            <div className="rounded-md bg-darkergrey p-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="size-3.5 text-lemigrey" />
+                <P className="text-xs font-medium text-white">Revisión con IA</P>
+                {review.difficulty != null && (
+                  <span
+                    className="ml-auto rounded-full bg-grey/30 px-2 py-0.5 text-[11px] text-lemigrey"
+                    title={review.difficultyReason ?? undefined}
+                  >
+                    Dificultad {review.difficulty}/100
+                  </span>
+                )}
+              </div>
+              {review.summary && <P className="mt-2 whitespace-pre-wrap text-xs text-lemigrey">{review.summary}</P>}
+              {review.difficultyReason && (
+                <P className="mt-1 text-[11px] italic text-demigrey">{review.difficultyReason}</P>
+              )}
+            </div>
+          )}
 
           {draft && (
             <div className="rounded-md border border-red/60 bg-darkergrey p-3">
@@ -308,7 +451,8 @@ export default function PdfReviewer({ submissionId, readOnly }: { submissionId: 
           )}
 
           {annotations.map((a, idx) => {
-            const own = !readOnly && a.author_id === userId;
+            const suggested = a.status === "suggested";
+            const own = !readOnly && !suggested && a.author_id === userId;
             const isEditing = editing?.id === a.id;
             return (
               <div
@@ -317,13 +461,26 @@ export default function PdfReviewer({ submissionId, readOnly }: { submissionId: 
                 onClick={() => !isEditing && focusAnnotation(a.id)}
                 className={`cursor-pointer rounded-md p-3 transition-colors ${
                   a.id === activeId ? "bg-darkergrey ring-1 ring-red" : "bg-darkergrey/60 hover:bg-darkergrey"
-                }`}
+                } ${suggested ? "border border-dashed border-grey/60" : ""}`}
               >
                 <div className="flex items-center gap-2">
-                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-red text-[10px] font-bold text-white">
+                  <span
+                    className={`flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white ${
+                      suggested ? "bg-grey" : "bg-red"
+                    }`}
+                  >
                     {idx + 1}
                   </span>
                   <span className="truncate text-xs font-medium text-white">{a.author_name}</span>
+                  {/* Accepted suggestions are the TA's comment as far as students are concerned. */}
+                  {!readOnly && (suggested || a.source === "ai") && (
+                    <span
+                      className="shrink-0 rounded bg-grey/30 px-1.5 py-0.5 text-[10px] font-semibold text-lemigrey"
+                      title={suggested ? "Sugerencia de la IA: solo la ve el equipo docente" : "Sugerida por la IA"}
+                    >
+                      IA
+                    </span>
+                  )}
                   <span className="ml-auto shrink-0 text-[11px] text-demigrey">
                     p. {a.page} · {formatDate(a.created_at)}
                   </span>
@@ -355,12 +512,28 @@ export default function PdfReviewer({ submissionId, readOnly }: { submissionId: 
                         disabled={saving || !editing.text.trim()}
                         className="rounded-md bg-red px-3 py-1 text-xs font-medium text-white hover:bg-red/80 disabled:opacity-50"
                       >
-                        Guardar
+                        {suggested ? "Aceptar" : "Guardar"}
                       </button>
                     </div>
                   </div>
                 ) : (
                   <P className="mt-2 whitespace-pre-wrap text-sm text-white">{a.comment}</P>
+                )}
+                {suggested && !readOnly && !isEditing && (
+                  <div className="mt-2 flex gap-3" onClick={(e) => e.stopPropagation()}>
+                    <button onClick={() => accept(a.id)} className="text-xs font-medium text-green-400 hover:text-green-300">
+                      Aceptar
+                    </button>
+                    <button
+                      onClick={() => setEditing({ id: a.id, text: a.comment })}
+                      className="text-xs text-demigrey hover:text-white"
+                    >
+                      Editar
+                    </button>
+                    <button onClick={() => dismiss(a.id)} className="text-xs text-demigrey hover:text-red">
+                      Descartar
+                    </button>
+                  </div>
                 )}
                 {own && !isEditing && (
                   <div className="mt-2 flex gap-3" onClick={(e) => e.stopPropagation()}>

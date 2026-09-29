@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ type Assignment = {
   due_date: string | null;
   rubric: string | null;
   filename: string | null;
+  guideline_filename: string | null;
 };
 
 // Converts an ISO due_date into the `yyyy-MM-ddThh:mm` format the native
@@ -62,6 +64,10 @@ export default function AssignmentsPage() {
   const [assignmentFile, setAssignmentFile] = useState<File | null>(null);
   const [currentFilename, setCurrentFilename] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  // Private grading guideline (only teachers/TAs and the AI review see it).
+  const [guidelineFile, setGuidelineFile] = useState<File | null>(null);
+  const [currentGuideline, setCurrentGuideline] = useState<string | null>(null);
+  const guidelineInputRef = useRef<HTMLInputElement | null>(null);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -95,6 +101,8 @@ export default function AssignmentsPage() {
     setRubric("");
     setAssignmentFile(null);
     setCurrentFilename(null);
+    setGuidelineFile(null);
+    setCurrentGuideline(null);
     setEditingId(null);
     setError(null);
   }
@@ -108,6 +116,8 @@ export default function AssignmentsPage() {
     setRubric(a.rubric ?? "");
     setAssignmentFile(null);
     setCurrentFilename(a.filename);
+    setGuidelineFile(null);
+    setCurrentGuideline(a.guideline_filename);
     setEditingId(a.id);
     setConfirmDeleteId(null);
     setError(null);
@@ -147,6 +157,14 @@ export default function AssignmentsPage() {
 
       const raw = localStorage.getItem("user")!;
       const user = JSON.parse(raw) as { id: string };
+      if (guidelineFile && assignmentId) {
+        const formData = new FormData();
+        formData.append("user_id", user.id);
+        formData.append("file", guidelineFile);
+        await api.post(`/api/v1/assignments/${assignmentId}/guideline`, formData, {
+          headers: { "Content-Type": undefined },
+        });
+      }
       resetForm();
       await loadData(user.id);
     } catch {
@@ -303,6 +321,32 @@ export default function AssignmentsPage() {
               </div>
             </Field>
 
+            <Field>
+              <FieldTitle className="text-white">Pauta de corrección (privada)</FieldTitle>
+              <P className="text-xs text-demigrey">
+                Solo la ven los ayudantes y el profesor. La revisión con IA la usa como referencia.
+              </P>
+              <div className="mt-2 flex items-center gap-3">
+                <input
+                  type="file"
+                  accept=".pdf,.txt,.md"
+                  ref={guidelineInputRef}
+                  onChange={(e) => setGuidelineFile(e.target.files?.[0] ?? null)}
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  onClick={() => guidelineInputRef.current?.click()}
+                  className="shrink-0 rounded-md bg-darkergrey text-white hover:bg-grey/30"
+                >
+                  {currentGuideline || guidelineFile ? "Reemplazar pauta" : "Subir pauta"}
+                </Button>
+                <P className="truncate text-sm text-demigrey">
+                  {guidelineFile?.name ?? currentGuideline ?? "Sin pauta"}
+                </P>
+              </div>
+            </Field>
+
             {error && <P className="text-sm text-red/80">{error}</P>}
 
             <Button
@@ -370,8 +414,14 @@ export default function AssignmentsPage() {
                       )}
                     </div>
                   </div>
-                  <div className="mt-2 flex items-center justify-between">
+                  <div className="mt-2 flex items-center justify-between gap-3">
                     <P className="text-xs text-demigrey">Estado: {a.status}</P>
+                    <Link
+                      href={`/assignments/${a.id}`}
+                      className="ml-auto text-xs font-medium text-demigrey underline-offset-2 hover:text-white hover:underline"
+                    >
+                      Correcciones
+                    </Link>
                     {a.filename && (
                       <a
                         href={`${API_BASE}/api/v1/assignments/${a.id}/file`}

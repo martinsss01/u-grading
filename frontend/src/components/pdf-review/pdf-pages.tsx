@@ -4,12 +4,13 @@ import { useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
-import type { Annotation, AnnotationDraft, Rect } from "@/lib/review";
+import type { Annotation, AnnotationDraft, Rect, Redaction } from "@/lib/review";
 
 // Must be set in the same module that renders <Document> (see react-pdf docs).
 pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
 
-export type Tool = "text" | "area";
+/** "censor" draws boxes to black out in the anonymized PDF instead of comments. */
+export type Tool = "text" | "area" | "censor";
 
 type Props = {
   url: string;
@@ -21,6 +22,10 @@ type Props = {
   draft: AnnotationDraft | null;
   onSelect: (draft: AnnotationDraft) => void;
   onAnnotationClick: (id: string) => void;
+  /** Shown (and removable) only while the censor tool is active. */
+  redactions?: Redaction[];
+  onCensor?: (page: number, rect: Rect) => void;
+  onDeleteRedaction?: (id: string) => void;
 };
 
 type Drag = { page: number; x0: number; y0: number; x1: number; y1: number };
@@ -72,26 +77,43 @@ function Marks({
   rects,
   active,
   draft,
+  suggested,
 }: {
   kind: "text" | "area";
   rects: Rect[];
   active?: boolean;
   draft?: boolean;
+  /** Pending AI suggestion: dashed and greyer until a TA accepts it. */
+  suggested?: boolean;
 }) {
   return rects.map((r, i) => (
     <div
       key={i}
       style={toPercentStyle(r)}
       className={`pointer-events-none absolute ${
-        kind === "text"
-          ? `mix-blend-multiply ${active || draft ? "bg-red/40" : "bg-red/20"}`
-          : `rounded-sm border-2 ${active || draft ? "border-red bg-red/15" : "border-red/70 bg-red/5"}`
+        suggested
+          ? `rounded-sm border-2 border-dashed ${active ? "border-red bg-red/10" : "border-grey/70 bg-grey/5"}`
+          : kind === "text"
+            ? `mix-blend-multiply ${active || draft ? "bg-red/40" : "bg-red/20"}`
+            : `rounded-sm border-2 ${active || draft ? "border-red bg-red/15" : "border-red/70 bg-red/5"}`
       } ${draft ? "animate-pulse" : ""}`}
     />
   ));
 }
 
-export default function PdfPages({ url, width, tool, annotations, activeId, draft, onSelect, onAnnotationClick }: Props) {
+export default function PdfPages({
+  url,
+  width,
+  tool,
+  annotations,
+  activeId,
+  draft,
+  onSelect,
+  onAnnotationClick,
+  redactions = [],
+  onCensor,
+  onDeleteRedaction,
+}: Props) {
   const [numPages, setNumPages] = useState(0);
   const [drag, setDrag] = useState<Drag | null>(null);
   const [loadError, setLoadError] = useState(false);
@@ -146,14 +168,24 @@ export default function PdfPages({ url, width, tool, annotations, activeId, draf
             <div className="pointer-events-none absolute inset-0 z-10">
               {pageAnnotations.map((a) => (
                 <div key={a.id} id={`ann-${a.id}`}>
-                  <Marks kind={a.position.kind} rects={a.position.rects} active={a.id === activeId} />
+                  <Marks
+                    kind={a.position.kind}
+                    rects={a.position.rects}
+                    active={a.id === activeId}
+                    suggested={a.status === "suggested"}
+                  />
                 </div>
               ))}
               {draft?.page === page && <Marks kind={draft.position.kind} rects={draft.position.rects} draft />}
-              {drag?.page === page && <Marks kind="area" rects={[dragRect(drag)]} draft />}
+              {drag?.page === page &&
+                (tool === "censor" ? (
+                  <div style={toPercentStyle(dragRect(drag))} className="absolute bg-black/70" />
+                ) : (
+                  <Marks kind="area" rects={[dragRect(drag)]} draft />
+                ))}
             </div>
 
-            {tool === "area" && (
+            {(tool === "area" || tool === "censor") && (
               <div
                 className="absolute inset-0 z-20 cursor-crosshair touch-none"
                 onPointerDown={(e) => {
@@ -171,11 +203,37 @@ export default function PdfPages({ url, width, tool, annotations, activeId, draf
                   const rect = dragRect(drag);
                   setDrag(null);
                   if (rect.width > MIN_AREA && rect.height > MIN_AREA) {
-                    onSelect({ page, position: { kind: "area", rects: [rect] }, highlighted_text: null });
+                    if (tool === "censor") onCensor?.(page, rect);
+                    else onSelect({ page, position: { kind: "area", rects: [rect] }, highlighted_text: null });
                   }
                 }}
               />
             )}
+
+            {/* Existing redactions, outlined so they can be told apart and removed. */}
+            {tool === "censor" &&
+              redactions
+                .filter((r) => r.page === page)
+                .flatMap((r) =>
+                  r.rects.map((rect, i) => (
+                    <div
+                      key={`${r.id}-${i}`}
+                      style={toPercentStyle(rect)}
+                      className="pointer-events-none absolute z-30 rounded-sm outline outline-2 outline-offset-1 outline-red"
+                    >
+                      {i === 0 && (
+                        <button
+                          onClick={() => onDeleteRedaction?.(r.id)}
+                          className="pointer-events-auto absolute -right-2 -top-2 flex size-5 items-center justify-center rounded-full bg-red text-xs font-bold text-white shadow hover:bg-red/80"
+                          aria-label={r.source === "auto" ? "Quitar censura automática" : "Quitar censura"}
+                          title={r.source === "auto" ? "Censura automática" : "Censura manual"}
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  )),
+                )}
 
             {/* Numbered pins sit above everything so they stay clickable in any tool. */}
             {pageAnnotations.map((a) => {
@@ -191,7 +249,11 @@ export default function PdfPages({ url, width, tool, annotations, activeId, draf
                   className={`absolute z-30 flex size-5 items-center justify-center rounded-full text-[10px] font-bold text-white shadow ${
                     a.position.kind === "text" ? "-translate-x-[125%]" : "-translate-x-1/2 -translate-y-1/2"
                   } ${
-                    a.id === activeId ? "bg-red ring-2 ring-white" : "bg-red/85 hover:bg-red"
+                    a.id === activeId
+                      ? "bg-red ring-2 ring-white"
+                      : a.status === "suggested"
+                        ? "bg-grey hover:bg-red"
+                        : "bg-red/85 hover:bg-red"
                   }`}
                   aria-label={`Comentario ${annotations.indexOf(a) + 1}`}
                 >

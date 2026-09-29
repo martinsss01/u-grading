@@ -1,19 +1,31 @@
+import asyncio
+import contextlib
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.routes import router as api_router
 from app.core.config import settings
-from app.db.session import engine
-from app.db.base import Base
 import app.models  # noqa: F401  (registers models on Base.metadata)
+from app.services.pipeline.worker import run_worker
+
+# Show the app's own INFO logs (pipeline progress) without touching uvicorn/SQLAlchemy logging.
+_app_logger = logging.getLogger("app")
+_app_logger.setLevel(logging.INFO)
+_app_logger.addHandler(logging.StreamHandler())
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # The schema is managed by Alembic (`alembic upgrade head`, run by the
+    # docker-compose command before uvicorn starts).
+    worker = asyncio.create_task(run_worker()) if settings.PIPELINE_WORKER_ENABLED else None
     yield
+    if worker:
+        worker.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await worker
 
 
 app = FastAPI(title="U-Grading API", version="0.1.0", lifespan=lifespan)

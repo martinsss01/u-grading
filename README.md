@@ -52,6 +52,59 @@ npm run dev
 
 ---
 
+## Database migrations
+
+The schema is managed with Alembic (`backend/alembic/`). The backend container
+runs `alembic upgrade head` on every start, so pulling new code and restarting
+is enough. After changing a model:
+
+```bash
+docker compose exec backend alembic revision --autogenerate -m "describe the change"
+# review the generated file in backend/alembic/versions/, then:
+docker compose exec backend alembic upgrade head
+```
+
+---
+
+## AI-assisted grading pipeline
+
+When an assignment closes, each student's latest submission goes through:
+
+1. **Extract** – text of every page; pages without a text layer (phone scans,
+   scanned PDFs) are transcribed by a vision LLM, which also locates the
+   student's name.
+2. **Anonymize** – the student's name, email and RUT are masked in code/text
+   sources and blacked out on PDF pages and scans. TAs only ever see this copy
+   (and neutral file names). The "Censurar" tool in the viewer fixes misses.
+3. **Review** – an LLM reads the anonymized submission with the assignment
+   statement and the private grading guideline (*pauta*), and leaves comment
+   suggestions (visible only to TAs until one accepts them) plus a 1–100
+   estimate of how hard the submission is to grade.
+4. **Distribute** – submissions are split across the section's TAs so each gets
+   the same number and a similar total difficulty.
+
+Teachers can also start it manually or re-run it from *Evaluaciones → Correcciones*.
+
+**Setup:** put an OpenRouter key in `backend/.env` (never commit it):
+
+```bash
+OPENROUTER_API_KEY=sk-or-...
+# optional, OpenRouter model slugs:
+LLM_OCR_MODEL=anthropic/claude-opus-5
+LLM_REVIEW_MODEL=anthropic/claude-opus-5
+```
+
+Requests only go to providers that don't store prompts (`LLM_DATA_COLLECTION=deny`).
+Without a key, submissions stay queued until one is configured.
+
+**Choosing models:** `python -m scripts.eval_llm --model <slug>` measures OCR
+character error rate and name detection on your own sample scans (see the
+script's docstring; samples go in the gitignored `backend/eval_samples/`).
+
+**Tests:** `docker compose exec backend sh -c "pip install -q -r requirements-dev.txt && python -m pytest -q tests"`
+
+---
+
 ## Project structure
 
 ```

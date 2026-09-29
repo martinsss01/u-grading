@@ -42,6 +42,11 @@ class Assignment(Base):
     # students see and download it as.
     file_path: Mapped[str | None] = mapped_column(String)
     filename: Mapped[str | None] = mapped_column(String)
+    # Private grading guideline (TAs/teachers only) that the AI review uses as context.
+    guideline_path: Mapped[str | None] = mapped_column(String)
+    guideline_filename: Mapped[str | None] = mapped_column(String)
+    # Set when the AI pipeline was started for this assignment (on close, or manually).
+    pipeline_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     section: Mapped["Section"] = relationship(back_populates="assignments")
     questions: Mapped[list["Question"]] = relationship(back_populates="assignment")

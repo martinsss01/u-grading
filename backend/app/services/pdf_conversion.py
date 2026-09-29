@@ -9,6 +9,7 @@ only append pages and never shift the ones TAs already annotated.
 import asyncio
 import html
 import io
+import json
 import logging
 import os
 import re
@@ -20,6 +21,7 @@ from sqlalchemy.orm import selectinload
 
 from app.db.session import AsyncSessionLocal
 from app.models.submission import Submission, SubmissionDocument, SubmissionFile
+from app.services.pipeline.identity import mask_same_length
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +108,7 @@ def _image_to_pdf(path: Path) -> bytes:
         return img2pdf.convert(buf.getvalue(), layout_fun=layout)
 
 
-def _read_text(path: Path) -> str | None:
+def read_text(path: Path) -> str | None:
     if path.stat().st_size > MAX_TEXT_BYTES:
         return None
     raw = path.read_bytes()
@@ -145,9 +147,31 @@ def _notebook_to_pdf(filename: str, text: str) -> bytes:
     return _html_to_pdf(_header(filename) + body, style)
 
 
-def convert_file(path: Path, filename: str) -> bytes:
-    """Convert one uploaded file to PDF bytes; never raises."""
+def _redact_notebook(text: str, redact: re.Pattern[str]) -> str:
+    """Mask identity in every string of the notebook (cells, outputs, metadata),
+    leaving embedded images alone."""
+
+    def walk(node, key=None):
+        if isinstance(node, str):
+            return node if key in ("image/png", "image/jpeg", "image/gif") else mask_same_length(node, redact)
+        if isinstance(node, list):
+            return [walk(item, key) for item in node]
+        if isinstance(node, dict):
+            return {k: walk(v, k) for k, v in node.items()}
+        return node
+
+    return json.dumps(walk(json.loads(text)), ensure_ascii=False)
+
+
+def convert_file(path: Path, filename: str, redact: re.Pattern[str] | None = None) -> bytes:
+    """Convert one uploaded file to PDF bytes; never raises.
+
+    With `redact`, identity in text sources (and the filename header) is masked
+    with same-length blocks, so pages break exactly where they do unredacted.
+    """
     ext = Path(filename).suffix.lower()
+    if redact is not None:
+        filename = mask_same_length(filename, redact)
     try:
         if not path.exists():
             return _placeholder_pdf(filename, "El archivo no se encontró en el servidor.")
@@ -158,11 +182,11 @@ def convert_file(path: Path, filename: str) -> bytes:
                 return _placeholder_pdf(filename, "El PDF está protegido o dañado y no se puede mostrar.")
         if ext in IMAGE_EXTENSIONS:
             return _image_to_pdf(path)
-        text = _read_text(path)
+        text = read_text(path)
         if text is not None:
             if ext == ".ipynb":
-                return _notebook_to_pdf(filename, text)
-            return _text_to_pdf(filename, text)
+                return _notebook_to_pdf(filename, _redact_notebook(text, redact) if redact else text)
+            return _text_to_pdf(filename, mask_same_length(text, redact))
     except Exception:
         logger.exception("Failed to convert %s", path)
         return _placeholder_pdf(filename, "No se pudo convertir este archivo a PDF.")
@@ -173,7 +197,7 @@ def _natural_key(name: str) -> list:
     return [int(t) if t.isdigit() else t.lower() for t in re.split(r"(\d+)", name)]
 
 
-def _upload_order(files: list[SubmissionFile]) -> list[SubmissionFile]:
+def upload_order(files: list[SubmissionFile]) -> list[SubmissionFile]:
     """Files have no timestamp column, so use their write time on disk.
 
     Uploads (including scanned pages) are sent one at a time, so write time
@@ -190,13 +214,13 @@ def _upload_order(files: list[SubmissionFile]) -> list[SubmissionFile]:
     return sorted(files, key=key)
 
 
-def merge_files(files: list[tuple[Path, str]], dest: Path) -> int:
+def merge_files(files: list[tuple[Path, str]], dest: Path, redact: re.Pattern[str] | None = None) -> int:
     """Convert and concatenate the given (path, filename) pairs into dest."""
     from pypdf import PdfWriter
 
     writer = PdfWriter()
     for path, filename in files:
-        writer.append(io.BytesIO(convert_file(path, filename)))
+        writer.append(io.BytesIO(convert_file(path, filename, redact)))
     if not files:
         writer.append(io.BytesIO(_html_to_pdf("<div class='placeholder'><h1>Entrega vacía</h1></div>")))
     dest.parent.mkdir(parents=True, exist_ok=True)
@@ -230,7 +254,7 @@ async def build_submission_pdf(submission_id: uuid.UUID) -> None:
             doc = SubmissionDocument(submission_id=submission_id)
             db.add(doc)
 
-        files = [(Path(f.file_path), f.filename) for f in _upload_order(submission.files)]
+        files = [(Path(f.file_path), f.filename) for f in upload_order(submission.files)]
         dest = document_path(submission, settings.UPLOAD_DIR)
         try:
             doc.page_count = await run_in_threadpool(merge_files, files, dest)

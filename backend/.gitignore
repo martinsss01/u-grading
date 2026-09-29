@@ -8,3 +8,6 @@ venv/
 .mypy_cache/
 .ruff_cache/
 uploads/
+
+# Real student scans for scripts/eval_llm.py — never commit
+eval_samples/

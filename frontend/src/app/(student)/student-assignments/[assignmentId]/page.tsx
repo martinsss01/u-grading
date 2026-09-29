@@ -45,6 +45,7 @@ type Submission = {
   id: string;
   created_at: string;
   files: SubmissionFile[];
+  student_comment: string | null;
 };
 
 type Assignment = {
@@ -128,6 +129,8 @@ export default function AssignmentDetailPage() {
   >([]);
   const [colabOpen, setColabOpen] = useState(false);
   const [colabUrl, setColabUrl] = useState("");
+  // Optional note for the teaching staff, sent along with the files.
+  const [comment, setComment] = useState("");
   // Ticks once a minute so the "Queda(n)" countdown below stays live without
   // a page reload.
   const [now, setNow] = useState(() => Date.now());
@@ -180,6 +183,7 @@ export default function AssignmentDetailPage() {
             user_id: user.id,
             url,
             submission_id: submissionId,
+            comment: comment || null,
           });
           submissionId = colabRes.data.id;
           continue;
@@ -191,6 +195,9 @@ export default function AssignmentDetailPage() {
         if (submissionId) {
           formData.append("submission_id", submissionId);
         }
+        if (comment) {
+          formData.append("comment", comment);
+        }
         const uploadRes = await api.post<Submission>("/api/v1/submissions/", formData, {
           headers: { "Content-Type": undefined },
         });
@@ -198,6 +205,7 @@ export default function AssignmentDetailPage() {
       }
       setActiveSubmissionId(submissionId);
       setPendingFiles([]);
+      setComment("");
       // Refetch so we pick up the new files in the history list along with
       // the updated status, rather than patching state by hand.
       const res = await api.get<Assignment>(`/api/v1/assignments/${assignmentId}`, {
@@ -420,6 +428,19 @@ export default function AssignmentDetailPage() {
                     </li>
                   ))}
                 </ul>
+                <label htmlFor="submission-comment" className="mt-3 block text-xs text-demigrey">
+                  Comentario para el equipo docente (opcional)
+                </label>
+                <textarea
+                  id="submission-comment"
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  disabled={uploading}
+                  rows={3}
+                  maxLength={2000}
+                  placeholder="Ej: la pregunta 3 está en la última página."
+                  className="mt-1 w-full resize-y rounded-md bg-darkergrey px-3 py-2 text-sm text-white outline-none placeholder:text-demigrey focus:ring-1 focus:ring-red disabled:opacity-60"
+                />
                 <button
                   onClick={handleSubmitPayload}
                   disabled={uploading}
@@ -452,6 +473,11 @@ export default function AssignmentDetailPage() {
                           {idx === 0 ? "Vigente" : "Reemplazada"}
                         </span>
                       </div>
+                      {s.student_comment && (
+                        <P className="mt-1 whitespace-pre-wrap border-l-2 border-grey/40 pl-2 text-xs italic text-lemigrey">
+                          {s.student_comment}
+                        </P>
+                      )}
                       <ul className="mt-1 space-y-0.5">
                         {s.files.map((f) => (
                           <li key={f.id}>

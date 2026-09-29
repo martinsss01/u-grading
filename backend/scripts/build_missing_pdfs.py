@@ -10,15 +10,12 @@ import sys
 from sqlalchemy import select
 
 import app.models  # noqa: F401  (registers models on Base.metadata)
-from app.db.base import Base
-from app.db.session import AsyncSessionLocal, engine
+from app.db.session import AsyncSessionLocal
 from app.models.submission import Submission, SubmissionDocument
 from app.services.pdf_conversion import build_submission_pdf
 
 
 async def main(rebuild_all: bool) -> None:
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
     async with AsyncSessionLocal() as db:
         stmt = select(Submission.id)
         if not rebuild_all:

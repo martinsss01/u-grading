@@ -6,29 +6,13 @@ import { useRouter, useParams } from "next/navigation";
 import api from "@/lib/api";
 import { P } from "@/components/ui/p";
 import { computeAssignmentStatus } from "@/lib/assignment";
-import { Paperclip } from "lucide-react";
+import { PIPELINE_LABELS, type ReviewSubmission, guidelineUrl, numberSubmissions } from "@/lib/review";
+import { AlertTriangle, FileText, Lock } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
-type Answer = {
-  id: string;
-  question_id: string;
-  grade: number | null;
-  graded_at: string | null;
-};
-
-type SubmissionFile = {
-  id: string;
-  filename: string;
-};
-
-type Submission = {
-  id: string;
-  needs_checking: boolean;
-  created_at: string;
-  files: SubmissionFile[];
-  answers: Answer[];
-};
+type Submission = ReviewSubmission;
+type Answer = Submission["answers"][number];
 
 type Assignment = {
   id: string;
@@ -38,6 +22,8 @@ type Assignment = {
   open_date: string | null;
   due_date: string | null;
   filename: string | null;
+  guideline_filename: string | null;
+  pipeline_started_at: string | null;
   submissions: Submission[];
 };
 
@@ -83,6 +69,12 @@ function timeLeftLabel(dueIso: string, now: number): string {
   return `${minutes}m`;
 }
 
+function difficultyClass(d: number): string {
+  if (d >= 67) return "bg-red/25 text-red-300";
+  if (d >= 34) return "bg-yellow-500/20 text-yellow-300";
+  return "bg-green-500/20 text-green-400";
+}
+
 function averageGrade(answers: Answer[]): string {
   if (answers.length === 0) return "—";
   const graded = answers.filter((a) => a.grade !== null);
@@ -101,6 +93,11 @@ export default function AssignmentSubmissionsPage() {
   // Ticks once a minute so the status badge and "Queda" countdown stay live
   // without a page reload — same pattern as the other assignment views.
   const [now, setNow] = useState(() => Date.now());
+  const [userId] = useState(() =>
+    typeof window === "undefined" ? "" : ((JSON.parse(localStorage.getItem("user") ?? "{}") as { id?: string }).id ?? ""),
+  );
+  // null = not chosen yet: default to "mine" once submissions have been assigned to this TA.
+  const [filter, setFilter] = useState<"mine" | "all" | null>(null);
 
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 60_000);
@@ -130,6 +127,10 @@ export default function AssignmentSubmissionsPage() {
 
   const a = assignment;
   const status = a ? computeAssignmentStatus(a.open_date, a.due_date, now) : null;
+  const numbered = numberSubmissions(a?.submissions ?? []);
+  const mineCount = numbered.filter(({ sub }) => sub.assigned_ta_id === userId).length;
+  const activeFilter = filter ?? (mineCount > 0 ? "mine" : "all");
+  const shown = activeFilter === "mine" ? numbered.filter(({ sub }) => sub.assigned_ta_id === userId) : numbered;
 
   return (
     <main className="min-h-[calc(100vh-64px)] px-6 py-10">
@@ -211,12 +212,56 @@ export default function AssignmentSubmissionsPage() {
               </div>
             )}
 
+            {a.guideline_filename && (
+              <div className="flex items-center justify-between rounded-lg bg-darkgrey px-5 py-4">
+                <div className="min-w-0">
+                  <P className="inline-flex items-center gap-1.5 text-xs uppercase tracking-widest text-demigrey">
+                    <Lock className="size-3" /> Pauta de corrección (privada)
+                  </P>
+                  <P className="mt-1 truncate text-sm text-white">{a.guideline_filename}</P>
+                </div>
+                <a
+                  href={guidelineUrl(a.id, userId)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-3 shrink-0 rounded-md bg-darkergrey px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-grey/30"
+                >
+                  Ver pauta
+                </a>
+              </div>
+            )}
+
             <div className="rounded-lg bg-darkgrey px-5 py-4">
-              <div className="mb-3 flex items-center justify-between">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <P className="text-xs uppercase tracking-widest text-demigrey">Entregas</P>
-                <span className="text-xs text-demigrey">
-                  {a.submissions.length} entrega{a.submissions.length !== 1 ? "s" : ""}
-                </span>
+                <div className="flex items-center gap-3">
+                  {mineCount > 0 && (
+                    <div className="flex rounded-md bg-darkergrey p-0.5 text-xs" role="group" aria-label="Filtrar entregas">
+                      {(
+                        [
+                          ["mine", `Asignadas a mí (${mineCount})`],
+                          ["all", `Todas (${a.submissions.length})`],
+                        ] as const
+                      ).map(([value, label]) => (
+                        <button
+                          key={value}
+                          onClick={() => setFilter(value)}
+                          aria-pressed={activeFilter === value}
+                          className={`rounded px-2.5 py-1 font-medium transition-colors ${
+                            activeFilter === value ? "bg-red text-white" : "text-demigrey hover:text-white"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {mineCount === 0 && (
+                    <span className="text-xs text-demigrey">
+                      {a.submissions.length} entrega{a.submissions.length !== 1 ? "s" : ""}
+                    </span>
+                  )}
+                </div>
               </div>
 
               {a.submissions.length === 0 ? (
@@ -226,40 +271,64 @@ export default function AssignmentSubmissionsPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-left text-xs uppercase tracking-widest text-demigrey">
-                        <th className="pb-2 font-medium">Entrega</th>
-                        <th className="pb-2 font-medium">Fecha</th>
-                        <th className="pb-2 font-medium">Estado</th>
+                        <th className="pb-2 pr-3 font-medium">Entrega</th>
+                        <th className="pb-2 pr-3 font-medium">Fecha</th>
+                        <th className="pb-2 pr-3 font-medium">Dificultad</th>
+                        <th className="pb-2 pr-3 font-medium">Estado</th>
                         <th className="pb-2 text-right font-medium">Nota</th>
                         <th className="pb-2" />
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-grey/20">
-                      {a.submissions.map((sub, idx) => (
+                      {shown.map(({ sub, number }) => (
                         <tr key={sub.id}>
-                          <td className="py-2.5 pr-3">
-                            <P className="text-sm text-white">Entrega {idx + 1}</P>
-                            <ul className="mt-0.5 space-y-0.5">
+                          <td className="py-2.5 pr-3 align-top">
+                            <P className="flex items-center gap-1.5 text-sm text-white">
+                              Entrega {number}
+                              {sub.needs_anonymization_check && (
+                                <span title="Revisar la anonimización antes de corregir">
+                                  <AlertTriangle className="size-3.5 text-yellow-400" />
+                                </span>
+                              )}
+                            </P>
+                            {/* Neutral names: original filenames can identify the student. */}
+                            <P className="mt-0.5 flex flex-wrap gap-x-2 text-xs text-demigrey">
                               {sub.files.map((f) => (
-                                <li key={f.id}>
-                                  <a
-                                    href={`${API_BASE}/api/v1/submissions/files/${f.id}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex min-w-0 items-center gap-1 text-xs text-demigrey underline-offset-2 hover:text-white hover:underline"
-                                  >
-                                    <Paperclip className="size-3.5 shrink-0" />
-                                    <span className="truncate">{f.filename}</span>
-                                  </a>
-                                </li>
+                                <span key={f.id} className="inline-flex items-center gap-1">
+                                  <FileText className="size-3 shrink-0" />
+                                  {f.filename}
+                                </span>
                               ))}
-                            </ul>
+                            </P>
+                            {sub.student_comment && (
+                              <P className="mt-1 line-clamp-2 max-w-xs text-xs italic text-lemigrey">
+                                “{sub.student_comment}”
+                              </P>
+                            )}
+                            {activeFilter === "all" && sub.assigned_ta_name && (
+                              <P className="mt-0.5 text-[11px] text-demigrey">Asignada a {sub.assigned_ta_name}</P>
+                            )}
                           </td>
-                          <td className="py-2.5 pr-3 text-xs text-demigrey">
+                          <td className="py-2.5 pr-3 align-top text-xs text-demigrey">
                             {formatDate(sub.created_at)}
                           </td>
-                          <td className="py-2.5 pr-3">
+                          <td className="py-2.5 pr-3 align-top">
+                            {sub.difficulty != null ? (
+                              <span
+                                title={sub.difficulty_reason ?? undefined}
+                                className={`rounded-full px-2 py-0.5 text-xs font-medium ${difficultyClass(sub.difficulty)}`}
+                              >
+                                {sub.difficulty}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-demigrey" title={sub.pipeline_error ?? undefined}>
+                                {PIPELINE_LABELS[sub.pipeline_status]}
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-2.5 pr-3 align-top">
                             <span
-                              className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                              className={`whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${
                                 sub.needs_checking
                                   ? "bg-red/20 text-red-400"
                                   : "bg-grey/20 text-lemigrey"
@@ -268,10 +337,10 @@ export default function AssignmentSubmissionsPage() {
                               {sub.needs_checking ? "Por revisar" : "Revisado"}
                             </span>
                           </td>
-                          <td className="py-2.5 text-right text-white">
+                          <td className="py-2.5 text-right align-top text-white">
                             {averageGrade(sub.answers)}
                           </td>
-                          <td className="py-2.5 pl-3 text-right">
+                          <td className="py-2.5 pl-3 text-right align-top">
                             <Link
                               href={`/submissions/${sectionId}/${assignmentId}/${sub.id}`}
                               className="rounded-md bg-red px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red/80"
