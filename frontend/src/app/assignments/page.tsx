@@ -305,9 +305,11 @@ function AssignmentsContent() {
         disablePointerDismissal
         onOpenChange={(open, details) => { if (!open && details.reason === "close-press") setDialog(null); }}
       >
-        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+        {/* The scroll happens in an inner box inset from the top and bottom, so
+            the scrollbar never runs into the popup's rounded corners. */}
+        <DialogContent className="max-w-2xl overflow-hidden p-0 py-2">
           {dialog && (
-            <>
+            <div className="max-h-[calc(90vh-1rem)] overflow-y-auto px-8 py-6 [scrollbar-color:#666666_transparent] [scrollbar-width:thin]">
               <DialogHeader className="block">
                 <DialogTitle>{dialog.editing ? "Editar Evaluación" : "Nueva Evaluación"}</DialogTitle>
                 <P className="mt-1 text-sm text-demigrey">
@@ -320,7 +322,7 @@ function AssignmentsContent() {
                 editing={dialog.editing}
                 onSaved={handleSaved}
               />
-            </>
+            </div>
           )}
         </DialogContent>
       </Dialog>
