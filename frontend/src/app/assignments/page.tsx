@@ -24,6 +24,7 @@ import {
   computeAssignmentStatus,
   formatDate,
   groupByType,
+  inPersonLabel,
   STATUS_COLORS,
   timeLeftLabel,
   TYPE_ORDER,
@@ -219,7 +220,11 @@ function AssignmentsContent() {
                                   >
                                     {a.title}
                                   </Link>
-                                  {a.due_date && (
+                                  {a.modality === "Presencial" && a.open_date && a.due_date ? (
+                                    <P className="mt-0.5 text-xs text-demigrey">
+                                      Presencial: {inPersonLabel(a.open_date, a.due_date)}
+                                    </P>
+                                  ) : a.due_date && (
                                     <P className="mt-0.5 text-xs text-demigrey">
                                       Entrega: {formatDate(a.due_date)}
                                       {status === "Abierto" && (

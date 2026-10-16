@@ -11,6 +11,7 @@ import {
   computeAssignmentStatus,
   formatDate,
   groupByType,
+  inPersonLabel,
   STATUS_COLORS,
   timeLeftLabel,
   TYPE_ORDER,
@@ -38,6 +39,7 @@ type Assignment = {
   id: string;
   title: string;
   type: string;
+  modality: "Presencial" | "Remoto";
   status: string;
   open_date: string | null;
   due_date: string | null;
@@ -219,7 +221,11 @@ function StudentAssignmentsContent() {
                               >
                                 <div className="flex-1">
                                   <P className="font-medium text-white group-hover:text-white">{a.title}</P>
-                                  {a.due_date && (
+                                  {a.modality === "Presencial" && a.open_date && a.due_date ? (
+                                    <P className="mt-0.5 text-xs text-demigrey">
+                                      Presencial: {inPersonLabel(a.open_date, a.due_date)}
+                                    </P>
+                                  ) : a.due_date && (
                                     <P className="mt-0.5 text-xs text-demigrey">
                                       Entrega: {formatDate(a.due_date)}
                                       {status === "Abierto" && (

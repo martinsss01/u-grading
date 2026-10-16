@@ -66,3 +66,15 @@ export function timeLeftLabel(dueIso: string, now: number): string {
   if (hours > 0) return `${hours}h ${minutes}m`;
   return `${minutes}m`;
 }
+
+// When an in-person evaluation is taken, e.g. "Lun 20-10 · 14:30 · 1,5 h".
+export function inPersonLabel(openIso: string, dueIso: string): string {
+  const start = new Date(openIso);
+  const weekday = start.toLocaleDateString("es-CL", { weekday: "short" }).replace(".", "");
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const day = `${pad(start.getDate())}-${pad(start.getMonth() + 1)}`;
+  const time = start.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", hour12: false });
+  const hours = (new Date(dueIso).getTime() - start.getTime()) / 3_600_000;
+  const duration = hours.toLocaleString("es-CL", { maximumFractionDigits: 2 });
+  return `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)} ${day} · ${time} · ${duration} h`;
+}
