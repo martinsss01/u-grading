@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Paperclip, PlusIcon, XIcon } from "lucide-react";
+import { ClipboardCheck, Paperclip, Pencil, PlusIcon, Trash2, XIcon } from "lucide-react";
 import api from "@/lib/api";
 import { P } from "@/components/ui/p";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,8 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 // being edited (null for a new one).
 type DialogState = { section: TeacherSection; editing: TeacherAssignment | null };
 
+const ACTION_BTN = "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors";
+
 export default function AssignmentsPage() {
   return (
     <Suspense fallback={null}>
@@ -55,7 +57,9 @@ function AssignmentsContent() {
   const [error, setError] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<string[]>([]);
   const [dialog, setDialog] = useState<DialogState | null>(null);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  // The assignment the delete-confirmation modal is open for.
+  const [deleteTarget, setDeleteTarget] = useState<TeacherAssignment | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   // Ticks once a minute so open assignments' countdowns and statuses stay
   // live without a page reload.
@@ -94,14 +98,19 @@ function AssignmentsContent() {
     await loadData();
   }
 
+  function openDelete(a: TeacherAssignment) {
+    setDeleteError(null);
+    setDeleteTarget(a);
+  }
+
   async function handleDelete(id: string) {
     setDeleting(true);
     try {
       await api.delete(`/api/v1/assignments/${id}`);
-      setConfirmDeleteId(null);
+      setDeleteTarget(null);
       await loadData();
     } catch {
-      setError("No se pudo eliminar la evaluación.");
+      setDeleteError("No se pudo eliminar la evaluación.");
     } finally {
       setDeleting(false);
     }
@@ -210,7 +219,6 @@ function AssignmentsContent() {
                         <ul>
                           {group.map((a) => {
                             const status = computeAssignmentStatus(a.open_date, a.due_date, now);
-                            const isConfirming = confirmDeleteId === a.id;
                             return (
                               <li key={a.id} className="flex items-center gap-4 px-6 py-3 transition-colors hover:bg-darkergrey/50">
                                 <div className="min-w-0 flex-1">
@@ -239,55 +247,37 @@ function AssignmentsContent() {
                                     {" · "}
                                     {a.review_published ? "Corrección publicada" : "Corrección oculta"}
                                   </P>
-                                  <div className="mt-1.5 flex items-center gap-3">
-                                    <Link
-                                      href={`/assignments/${a.id}`}
-                                      className="text-xs font-medium text-demigrey hover:text-white"
+                                  {a.filename && (
+                                    <a
+                                      href={`${API_BASE}/api/v1/assignments/${a.id}/file`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="mt-1 inline-flex max-w-full items-center gap-1 text-xs text-demigrey hover:text-white"
                                     >
-                                      Correcciones
-                                    </Link>
-                                    <button
-                                      onClick={() => { setConfirmDeleteId(null); setDialog({ section, editing: a }); }}
-                                      className="text-xs text-demigrey hover:text-white"
-                                    >
-                                      Editar
-                                    </button>
-                                    {isConfirming ? (
-                                      <>
-                                        <button
-                                          onClick={() => handleDelete(a.id)}
-                                          disabled={deleting}
-                                          className="text-xs font-medium text-red hover:text-red/80 disabled:opacity-50"
-                                        >
-                                          {deleting ? "..." : "Confirmar eliminación"}
-                                        </button>
-                                        <button
-                                          onClick={() => setConfirmDeleteId(null)}
-                                          className="text-xs text-demigrey hover:text-white"
-                                        >
-                                          Cancelar
-                                        </button>
-                                      </>
-                                    ) : (
-                                      <button
-                                        onClick={() => setConfirmDeleteId(a.id)}
-                                        className="text-xs text-demigrey hover:text-red"
-                                      >
-                                        Eliminar
-                                      </button>
-                                    )}
-                                    {a.filename && (
-                                      <a
-                                        href={`${API_BASE}/api/v1/assignments/${a.id}/file`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex min-w-0 items-center gap-1 text-xs text-demigrey hover:text-white"
-                                      >
-                                        <Paperclip className="size-3.5 shrink-0" />
-                                        <span className="truncate">{a.filename}</span>
-                                      </a>
-                                    )}
-                                  </div>
+                                      <Paperclip className="size-3.5 shrink-0" />
+                                      <span className="truncate">{a.filename}</span>
+                                    </a>
+                                  )}
+                                </div>
+                                <div className="flex shrink-0 items-center gap-2">
+                                  <Link href={`/assignments/${a.id}`} className={`${ACTION_BTN} bg-red text-white hover:bg-red/80`}>
+                                    <ClipboardCheck className="size-3.5" />
+                                    Correcciones
+                                  </Link>
+                                  <button
+                                    onClick={() => setDialog({ section, editing: a })}
+                                    className={`${ACTION_BTN} bg-darkergrey text-white hover:bg-grey/40`}
+                                  >
+                                    <Pencil className="size-3.5" />
+                                    Editar
+                                  </button>
+                                  <button
+                                    onClick={() => openDelete(a)}
+                                    className={`${ACTION_BTN} bg-darkergrey text-lightgrey hover:bg-red/20 hover:text-red-400`}
+                                  >
+                                    <Trash2 className="size-3.5" />
+                                    Eliminar
+                                  </button>
                                 </div>
                                 <span
                                   className={`w-28 shrink-0 rounded-full px-2.5 py-0.5 text-center text-xs font-medium ${STATUS_COLORS[status] ?? "bg-grey/20 text-lemigrey"}`}
@@ -330,6 +320,43 @@ function AssignmentsContent() {
                 editing={dialog.editing}
                 onSaved={handleSaved}
               />
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => { if (!open && !deleting) setDeleteTarget(null); }}
+      >
+        <DialogContent>
+          {deleteTarget && (
+            <>
+              <DialogHeader>
+                <DialogTitle>Eliminar evaluación</DialogTitle>
+              </DialogHeader>
+              <P className="text-sm text-lightgrey">
+                ¿Seguro que quieres eliminar <span className="font-semibold text-white">{deleteTarget.title}</span>?
+                También se eliminarán las entregas de los estudiantes. Esta acción no se puede deshacer.
+              </P>
+              {deleteError && <P className="mt-3 text-sm text-red-400">{deleteError}</P>}
+              <div className="mt-6 flex justify-end gap-2">
+                <button
+                  onClick={() => setDeleteTarget(null)}
+                  disabled={deleting}
+                  className={`${ACTION_BTN} bg-darkergrey text-white hover:bg-grey/40 disabled:opacity-50`}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => handleDelete(deleteTarget.id)}
+                  disabled={deleting}
+                  className={`${ACTION_BTN} bg-red text-white hover:bg-red/80 disabled:opacity-50`}
+                >
+                  <Trash2 className="size-3.5" />
+                  {deleting ? "Eliminando..." : "Eliminar"}
+                </button>
+              </div>
             </>
           )}
         </DialogContent>
