@@ -6,7 +6,7 @@ import { useRouter, useParams } from "next/navigation";
 import QRCode from "qrcode";
 import api from "@/lib/api";
 import { P } from "@/components/ui/p";
-import { computeAssignmentStatus } from "@/lib/assignment";
+import { computeAssignmentStatus, durationLabel, formatDate, timeLabel } from "@/lib/assignment";
 import { Link2, Paperclip } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -52,6 +52,7 @@ type Assignment = {
   id: string;
   title: string;
   type: string;
+  modality: "Presencial" | "Remoto";
   status: string;
   rubric: string | null;
   open_date: string | null;
@@ -76,17 +77,6 @@ const STATUS_COLORS: Record<string, string> = {
   Cerrado: "bg-red/20 text-red-400",
 };
 
-function formatDate(iso: string | null) {
-  if (!iso) return null;
-  return new Date(iso).toLocaleDateString("es-CL", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-}
 
 // Human-readable countdown to a due date, e.g. "2d 5h" or "45m" — same
 // format as the "Mis Evaluaciones" list view. Only ever shown for "Abierto"
@@ -279,6 +269,26 @@ export default function AssignmentDetailPage() {
               </P>
             </div>
 
+            {a.modality === "Presencial" && a.open_date && a.due_date ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="rounded-lg bg-darkgrey px-5 py-4">
+                <P className="text-xs uppercase tracking-widest text-demigrey">Fecha y hora</P>
+                <P className="mt-1 font-medium text-white">{formatDate(a.open_date)}</P>
+              </div>
+              <div className="rounded-lg bg-darkgrey px-5 py-4">
+                <div className="flex items-center gap-2">
+                  <P className="text-xs uppercase tracking-widest text-demigrey">Duración</P>
+                  {status === "Abierto" && (
+                    <span className="rounded-full bg-red/20 px-2 py-0.5 text-xs font-medium text-white">
+                      Queda {timeLeftLabel(a.due_date, now)}
+                    </span>
+                  )}
+                </div>
+                <P className="mt-1 font-medium text-white">{durationLabel(a.open_date, a.due_date)}</P>
+                <P className="mt-0.5 text-xs text-demigrey">Termina a las {timeLabel(a.due_date)}</P>
+              </div>
+            </div>
+            ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="rounded-lg bg-darkgrey px-5 py-4">
                 <P className="text-xs uppercase tracking-widest text-demigrey">Fecha de inicio</P>
@@ -300,6 +310,7 @@ export default function AssignmentDetailPage() {
                 </P>
               </div>
             </div>
+            )}
 
             <div className="rounded-lg bg-darkgrey px-5 py-4">
               <P className="mb-2 text-xs uppercase tracking-widest text-demigrey">Descripción y criterios</P>

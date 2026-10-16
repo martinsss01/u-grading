@@ -230,7 +230,7 @@ function AssignmentsContent() {
                                   </Link>
                                   {a.modality === "Presencial" && a.open_date && a.due_date ? (
                                     <P className="mt-0.5 text-xs text-demigrey">
-                                      Presencial: {inPersonLabel(a.open_date, a.due_date)}
+                                      Fecha y hora: {inPersonLabel(a.open_date, a.due_date)}
                                     </P>
                                   ) : a.due_date && (
                                     <P className="mt-0.5 text-xs text-demigrey">

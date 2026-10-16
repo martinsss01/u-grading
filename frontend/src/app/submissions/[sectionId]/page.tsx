@@ -5,7 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import api from "@/lib/api";
 import { P } from "@/components/ui/p";
 import { courseCodeLabel } from "@/lib/course";
-import { computeAssignmentStatus } from "@/lib/assignment";
+import { computeAssignmentStatus, formatDate } from "@/lib/assignment";
 import { RoleIcon } from "@/components/role-icon";
 import {
   Combobox,
@@ -58,17 +58,6 @@ const TYPE_PLURAL: Record<string, string> = {
   Examen: "Exámenes",
 };
 
-function formatDate(iso: string | null) {
-  if (!iso) return null;
-  return new Date(iso).toLocaleDateString("es-CL", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-}
 
 function groupByType(assignments: Assignment[]): [string, Assignment[]][] {
   const map = new Map<string, Assignment[]>();

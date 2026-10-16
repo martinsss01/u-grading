@@ -38,16 +38,17 @@ export const STATUS_COLORS: Record<string, string> = {
   Cerrado: "bg-red/20 text-red-400",
 };
 
+// "DD-MM-YYYY HH:MM", e.g. "28-10-2026 23:59".
 export function formatDate(iso: string | null) {
   if (!iso) return null;
-  return new Date(iso).toLocaleDateString("es-CL", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
+  return `${dayLabel(iso)} ${timeLabel(iso)}`;
+}
+
+// "DD-MM-YYYY", e.g. "28-10-2026".
+function dayLabel(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()}`;
 }
 
 // Human-readable countdown to a due date, e.g. "2d 5h" or "45m". Only ever
@@ -67,14 +68,18 @@ export function timeLeftLabel(dueIso: string, now: number): string {
   return `${minutes}m`;
 }
 
-// When an in-person evaluation is taken, e.g. "Lun 20-10 · 14:30 · 1,5 h".
+// Length of an in-person evaluation, e.g. "1,5 h".
+export function durationLabel(openIso: string, dueIso: string): string {
+  const hours = (new Date(dueIso).getTime() - new Date(openIso).getTime()) / 3_600_000;
+  return `${hours.toLocaleString("es-CL", { maximumFractionDigits: 2 })} h`;
+}
+
+// Clock time as HH:MM, e.g. "16:00".
+export function timeLabel(iso: string): string {
+  return new Date(iso).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", hour12: false });
+}
+
+// When an in-person evaluation is taken, e.g. "20-10-2026 14:30 - 1,5 h".
 export function inPersonLabel(openIso: string, dueIso: string): string {
-  const start = new Date(openIso);
-  const weekday = start.toLocaleDateString("es-CL", { weekday: "short" }).replace(".", "");
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const day = `${pad(start.getDate())}-${pad(start.getMonth() + 1)}`;
-  const time = start.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", hour12: false });
-  const hours = (new Date(dueIso).getTime() - start.getTime()) / 3_600_000;
-  const duration = hours.toLocaleString("es-CL", { maximumFractionDigits: 2 });
-  return `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)} ${day} · ${time} · ${duration} h`;
+  return `${formatDate(openIso)} - ${durationLabel(openIso, dueIso)}`;
 }

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import api from "@/lib/api";
 import { P } from "@/components/ui/p";
-import { computeAssignmentStatus } from "@/lib/assignment";
+import { computeAssignmentStatus, formatDate } from "@/lib/assignment";
 import { PIPELINE_LABELS, type ReviewSubmission, guidelineUrl, numberSubmissions } from "@/lib/review";
 import { AlertTriangle, FileText, Lock } from "lucide-react";
 
@@ -43,17 +43,6 @@ const STATUS_COLORS: Record<string, string> = {
   Cerrado: "bg-red/20 text-red-400",
 };
 
-function formatDate(iso: string | null) {
-  if (!iso) return null;
-  return new Date(iso).toLocaleDateString("es-CL", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-}
 
 // Same countdown format as the student assignment detail page.
 function timeLeftLabel(dueIso: string, now: number): string {

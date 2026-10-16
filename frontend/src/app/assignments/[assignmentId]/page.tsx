@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { AlertTriangle, RotateCw, Sparkles } from "lucide-react";
 import { P } from "@/components/ui/p";
+import { formatDate } from "@/lib/assignment";
 import {
   PIPELINE_LABELS,
   type PipelineOverview,
@@ -14,15 +15,6 @@ import {
   setAssignee,
 } from "@/lib/review";
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleString("es-CL", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 const STATUS_CLASS: Record<string, string> = {
   not_started: "bg-grey/20 text-lemigrey",
