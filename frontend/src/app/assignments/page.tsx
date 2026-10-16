@@ -303,7 +303,13 @@ function AssignmentsContent() {
         </div>
       </div>
 
-      <Dialog open={dialog !== null} onOpenChange={(open) => { if (!open) setDialog(null); }}>
+      {/* Only the X closes it: a stray click outside or Esc would throw away
+          a half-filled form. */}
+      <Dialog
+        open={dialog !== null}
+        disablePointerDismissal
+        onOpenChange={(open, details) => { if (!open && details.reason === "close-press") setDialog(null); }}
+      >
         <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
           {dialog && (
             <>

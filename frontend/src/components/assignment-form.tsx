@@ -8,9 +8,18 @@ import { Field, FieldLabel, FieldTitle } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { formatDate } from "@/lib/assignment";
 
 export const ASSIGNMENT_TYPES = ["Tarea", "Ejercicio", "Control", "Examen"] as const;
 export type AssignmentType = (typeof ASSIGNMENT_TYPES)[number];
+
+export const MODALITIES = ["Presencial", "Remoto"] as const;
+export type Modality = (typeof MODALITIES)[number];
+
+// Evaluations usually taken in a room at a set time; the rest default to a
+// date range. Only the starting choice — the professor can always switch.
+const IN_PERSON_TYPES: AssignmentType[] = ["Ejercicio", "Control", "Examen"];
+const defaultModality = (t: AssignmentType): Modality => (IN_PERSON_TYPES.includes(t) ? "Presencial" : "Remoto");
 
 export type TeacherSection = {
   id: string;
@@ -25,6 +34,7 @@ export type TeacherAssignment = {
   section_id: string;
   title: string;
   type: AssignmentType;
+  modality: Modality;
   status: string;
   open_date: string | null;
   due_date: string | null;
@@ -42,6 +52,22 @@ function isoToDatetimeLocal(iso: string | null): string {
   const d = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// End of an in-person evaluation: a datetime-local start plus a duration in
+// hours, or null while either is missing/invalid.
+function endDate(start: string, durationHours: string): Date | null {
+  const hours = Number(durationHours);
+  if (!start || !(hours > 0)) return null;
+  return new Date(new Date(start).getTime() + hours * 3_600_000);
+}
+
+// Duration in hours between two datetime-local values, for opening an
+// in-person evaluation in the form ("" if it can't be worked out).
+function hoursBetween(start: string, end: string): string {
+  if (!start || !end) return "";
+  const hours = (new Date(end).getTime() - new Date(start).getTime()) / 3_600_000;
+  return hours > 0 ? String(Math.round(hours * 100) / 100) : "";
 }
 
 /**
@@ -62,6 +88,11 @@ export function AssignmentForm({
   const [type, setType] = useState<AssignmentType>(editing?.type ?? "Tarea");
   const [openDate, setOpenDate] = useState(isoToDatetimeLocal(editing?.open_date ?? null));
   const [dueDate, setDueDate] = useState(isoToDatetimeLocal(editing?.due_date ?? null));
+  const [modality, setModality] = useState<Modality>(editing?.modality ?? defaultModality(type));
+  // Once the professor picks a modality themselves, changing the type stops
+  // switching it for them.
+  const [modalityTouched, setModalityTouched] = useState(!!editing);
+  const [duration, setDuration] = useState(() => hoursBetween(openDate, dueDate));
   const [rubric, setRubric] = useState(editing?.rubric ?? "");
   // What students can see: the assignment itself, and their grades/TA comments.
   const [statementPublished, setStatementPublished] = useState(editing?.statement_published ?? false);
@@ -79,24 +110,50 @@ export function AssignmentForm({
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Switching carries over what was already entered: an end date becomes a
+  // duration, and a duration becomes an end date.
+  function switchModality(next: Modality) {
+    if (next === modality) return;
+    if (next === "Presencial") {
+      setDuration(hoursBetween(openDate, dueDate));
+    } else {
+      const end = endDate(openDate, duration);
+      if (end) setDueDate(isoToDatetimeLocal(end.toISOString()));
+    }
+    setModality(next);
+  }
+
+  function changeType(t: AssignmentType) {
+    setType(t);
+    if (!modalityTouched) switchModality(defaultModality(t));
+  }
+
+  const inPersonEnd = modality === "Presencial" ? endDate(openDate, duration) : null;
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
+    if (modality === "Presencial" && !inPersonEnd) {
+      setError("Indica la fecha, hora y duración de la evaluación.");
+      return;
+    }
+
     const openDateIso = openDate ? new Date(openDate).toISOString() : null;
-    const dueDateIso = dueDate ? new Date(dueDate).toISOString() : null;
+    const dueDateIso =
+      modality === "Presencial" ? inPersonEnd!.toISOString() : dueDate ? new Date(dueDate).toISOString() : null;
 
     setSubmitting(true);
     try {
       let assignmentId = editing?.id ?? null;
       if (editing) {
         await api.patch(`/api/v1/assignments/${editing.id}`, {
-          title, type, rubric: rubric || null, open_date: openDateIso, due_date: dueDateIso,
+          title, type, modality, rubric: rubric || null, open_date: openDateIso, due_date: dueDateIso,
           statement_published: statementPublished, review_published: reviewPublished,
         });
       } else {
         const res = await api.post<TeacherAssignment>("/api/v1/assignments/", {
-          section_id: sectionId, title, type, rubric: rubric || null, open_date: openDateIso, due_date: dueDateIso,
+          section_id: sectionId, title, type, modality, rubric: rubric || null, open_date: openDateIso, due_date: dueDateIso,
           statement_published: statementPublished, review_published: reviewPublished,
         });
         assignmentId = res.data.id;
@@ -142,10 +199,10 @@ export function AssignmentForm({
         />
       </Field>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field>
           <FieldLabel htmlFor="type" className="text-white">Tipo</FieldLabel>
-          <Select value={type} onValueChange={(v) => setType(v as AssignmentType)}>
+          <Select value={type} onValueChange={(v) => changeType(v as AssignmentType)}>
             <SelectTrigger className="w-full rounded-md bg-darkergrey text-white focus-visible:border-red/50 focus-visible:ring-red/20">
               <SelectValue />
             </SelectTrigger>
@@ -158,29 +215,86 @@ export function AssignmentForm({
         </Field>
 
         <Field>
-          <FieldLabel htmlFor="openDate" className="text-white">Fecha de inicio</FieldLabel>
-          <Input
-            id="openDate"
-            type="datetime-local"
-            lang="es-CL"
-            value={openDate}
-            onChange={(e) => setOpenDate(e.target.value)}
-            className="rounded-md bg-darkergrey text-white placeholder:text-demigrey [color-scheme:dark] focus-visible:border-red/50 focus-visible:ring-red/20"
-          />
-        </Field>
-
-        <Field>
-          <FieldLabel htmlFor="dueDate" className="text-white">Fecha de entrega</FieldLabel>
-          <Input
-            id="dueDate"
-            type="datetime-local"
-            lang="es-CL"
-            value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
-            className="rounded-md bg-darkergrey text-white placeholder:text-demigrey [color-scheme:dark] focus-visible:border-red/50 focus-visible:ring-red/20"
-          />
+          <FieldTitle className="text-white">Modalidad</FieldTitle>
+          <div role="group" aria-label="Modalidad" className="flex rounded-md bg-darkergrey p-1">
+            {MODALITIES.map((m) => (
+              <button
+                key={m}
+                type="button"
+                aria-pressed={modality === m}
+                onClick={() => { setModalityTouched(true); switchModality(m); }}
+                className={`flex-1 rounded px-3 py-1 text-sm font-medium transition-colors ${
+                  modality === m ? "bg-red text-white" : "text-demigrey hover:text-white"
+                }`}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
         </Field>
       </div>
+
+      {modality === "Presencial" ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field>
+            <FieldLabel htmlFor="openDate" className="text-white">Fecha y hora</FieldLabel>
+            <Input
+              id="openDate"
+              type="datetime-local"
+              lang="es-CL"
+              value={openDate}
+              onChange={(e) => setOpenDate(e.target.value)}
+              className="rounded-md bg-darkergrey text-white placeholder:text-demigrey [color-scheme:dark] focus-visible:border-red/50 focus-visible:ring-red/20"
+            />
+          </Field>
+
+          <Field>
+            <FieldLabel htmlFor="duration" className="text-white">Duración (horas)</FieldLabel>
+            <Input
+              id="duration"
+              type="number"
+              min={0.25}
+              step={0.25}
+              value={duration}
+              onChange={(e) => setDuration(e.target.value)}
+              placeholder="1.5"
+              className="rounded-md bg-darkergrey text-white placeholder:text-demigrey focus-visible:border-red/50 focus-visible:ring-red/20"
+            />
+          </Field>
+
+          {inPersonEnd && (
+            <P className="-mt-2 text-xs text-demigrey sm:col-span-2">
+              Termina: {formatDate(inPersonEnd.toISOString())}
+            </P>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field>
+            <FieldLabel htmlFor="openDate" className="text-white">Fecha de inicio</FieldLabel>
+            <Input
+              id="openDate"
+              type="datetime-local"
+              lang="es-CL"
+              value={openDate}
+              onChange={(e) => setOpenDate(e.target.value)}
+              className="rounded-md bg-darkergrey text-white placeholder:text-demigrey [color-scheme:dark] focus-visible:border-red/50 focus-visible:ring-red/20"
+            />
+          </Field>
+
+          <Field>
+            <FieldLabel htmlFor="dueDate" className="text-white">Fecha de entrega</FieldLabel>
+            <Input
+              id="dueDate"
+              type="datetime-local"
+              lang="es-CL"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="rounded-md bg-darkergrey text-white placeholder:text-demigrey [color-scheme:dark] focus-visible:border-red/50 focus-visible:ring-red/20"
+            />
+          </Field>
+        </div>
+      )}
 
       <Field>
         <FieldLabel htmlFor="rubric" className="text-white">Descripción y criterios</FieldLabel>
