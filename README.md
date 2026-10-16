@@ -6,9 +6,10 @@ Full-stack grading management platform.
 
 | Layer     | Technology                                             |
 |-----------|--------------------------------------------------------|
-| Frontend  | Next.js 14 · React 18 · TypeScript · Tailwind CSS     |
+| Frontend  | Next.js 16 · React 19 · TypeScript · Tailwind CSS 3 · shadcn/Base UI |
 | Backend   | FastAPI · SQLAlchemy (async) · Alembic                 |
 | Database  | PostgreSQL 16                                          |
+| LLMs      | OpenRouter (OCR + review models)                       |
 | Pkg mgr   | npm (Node 20)                                          |
 
 ---
@@ -21,9 +22,10 @@ docker-compose up --build
 
 | Service  | URL                        |
 |----------|----------------------------|
-| Frontend | http://localhost:3000      |
+| Frontend | http://localhost:3001      |
 | Backend  | http://localhost:8000      |
 | API docs | http://localhost:8000/docs |
+| Postgres | localhost:5433 (user `postgres`, db `ugrading`) |
 
 ---
 
@@ -47,7 +49,7 @@ uvicorn main:app --reload
 ```bash
 cd frontend
 npm install
-npm run dev
+npm run dev     # → http://localhost:3000 (Docker serves it on 3001)
 ```
 
 ---
@@ -108,31 +110,41 @@ script's docstring; samples go in the gitignored `backend/eval_samples/`).
 ## Project structure
 
 ```
-U-Grading/
+u-grading/
 ├── docker-compose.yml
 ├── README.md
+├── CLAUDE.md                     ← context + working rules for Claude Code
 ├── frontend/
-│   ├── Dockerfile
-│   ├── package.json
-│   ├── next.config.mjs       ← proxies /api/* → backend
-│   ├── tailwind.config.ts
+│   ├── next.config.mjs
+│   ├── tailwind.config.ts        ← brand palette tokens
 │   └── src/
 │       ├── app/
-│       │   ├── layout.tsx
-│       │   ├── page.tsx
-│       │   └── globals.css
-│       ├── components/       ← shared React components (add here)
-│       └── lib/
-│           └── api.ts        ← pre-configured axios client
+│       │   ├── page.tsx          ← login
+│       │   ├── (admin)/          ← admin-users, admin-sections
+│       │   ├── (student)/        ← student-assignments, -courses, -calendar
+│       │   ├── assignments/      ← teacher assignment management
+│       │   ├── submissions/      ← TA correction flow (section → assignment → submission)
+│       │   └── scan/             ← phone scan upload page
+│       ├── components/
+│       │   ├── ui/               ← shadcn/Base UI primitives
+│       │   ├── pdf-review/       ← PDF viewer with comments and redaction
+│       │   └── role-guard.tsx    ← client-side role gate
+│       └── lib/                  ← axios client (api.ts), scanApi.ts, helpers
 └── backend/
-    ├── Dockerfile
-    ├── requirements.txt
-    ├── main.py               ← FastAPI entry point
+    ├── main.py                   ← FastAPI entry point, starts the pipeline worker
+    ├── alembic/versions/         ← migrations
+    ├── scripts/                  ← eval_llm.py, build_missing_pdfs.py
+    ├── tests/                    ← pytest
     └── app/
-        ├── api/v1/routes/    ← route handlers
-        │   └── grades.py
-        ├── core/config.py    ← settings via pydantic-settings
-        ├── db/               ← engine, session, declarative base
-        ├── models/grade.py   ← SQLAlchemy ORM models
-        └── schemas/grade.py  ← Pydantic request/response schemas
+        ├── api/v1/routes/        ← auth, users, courses, sections, assignments, submissions
+        ├── api/v1/permissions.py ← section-role checks
+        ├── core/                 ← settings (config.py), security
+        ├── db/                   ← engine, session, declarative base
+        ├── models/               ← SQLAlchemy ORM models + Spanish-valued enums
+        ├── schemas/              ← Pydantic request/response schemas
+        ├── services/
+        │   ├── llm.py            ← OpenRouter client
+        │   ├── pdf_conversion.py ← merged review PDF
+        │   └── pipeline/         ← extract, ocr, anonymize, review, distribute, worker
+        └── seed.py               ← seed data (courses_seed.json, seed_data.md)
 ```
