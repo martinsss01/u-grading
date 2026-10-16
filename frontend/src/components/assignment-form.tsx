@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { isAxiosError } from "axios";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { P } from "@/components/ui/p";
@@ -54,6 +55,11 @@ function isoToDatetimeLocal(iso: string | null): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+// Red asterisk for required fields.
+function Required() {
+  return <span aria-hidden className="ml-0.5 text-red">*</span>;
+}
+
 // End of an in-person evaluation: a datetime-local start plus a duration in
 // hours, or null while either is missing/invalid.
 function endDate(start: string, durationHours: string): Date | null {
@@ -86,7 +92,10 @@ export function AssignmentForm({
 }) {
   const [title, setTitle] = useState(editing?.title ?? "");
   const [type, setType] = useState<AssignmentType>(editing?.type ?? "Tarea");
-  const [openDate, setOpenDate] = useState(isoToDatetimeLocal(editing?.open_date ?? null));
+  // A new evaluation opens now unless the professor says otherwise.
+  const [openDate, setOpenDate] = useState(
+    isoToDatetimeLocal(editing ? editing.open_date : new Date().toISOString())
+  );
   const [dueDate, setDueDate] = useState(isoToDatetimeLocal(editing?.due_date ?? null));
   const [modality, setModality] = useState<Modality>(editing?.modality ?? defaultModality(type));
   // Once the professor picks a modality themselves, changing the type stops
@@ -138,6 +147,21 @@ export function AssignmentForm({
       setError("Indica la fecha, hora y duración de la evaluación.");
       return;
     }
+    if (modality === "Remoto") {
+      if (!openDate || !dueDate) {
+        setError("Indica la fecha de inicio y la fecha de entrega.");
+        return;
+      }
+      if (new Date(dueDate) <= new Date(openDate)) {
+        setError("La fecha de entrega debe ser posterior a la fecha de inicio.");
+        return;
+      }
+      // Students taking it from home need something to work from.
+      if (statementPublished && !assignmentFile && !currentFilename && !rubric.trim()) {
+        setError("Para publicar el enunciado, sube un documento o escribe una descripción.");
+        return;
+      }
+    }
 
     const openDateIso = openDate ? new Date(openDate).toISOString() : null;
     const dueDateIso =
@@ -178,8 +202,14 @@ export function AssignmentForm({
         });
       }
       await onSaved();
-    } catch {
-      setError(editing ? "No se pudo guardar la evaluación." : "No se pudo crear la evaluación.");
+    } catch (err) {
+      // The backend re-checks the dates and explains what's wrong.
+      const detail = isAxiosError(err) ? err.response?.data?.detail : null;
+      setError(
+        typeof detail === "string"
+          ? detail
+          : editing ? "No se pudo guardar la evaluación." : "No se pudo crear la evaluación."
+      );
     } finally {
       setSubmitting(false);
     }
@@ -188,7 +218,7 @@ export function AssignmentForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <Field>
-        <FieldLabel htmlFor="title" className="text-white">Nombre de la evaluación</FieldLabel>
+        <FieldLabel htmlFor="title" className="text-white">Nombre de la evaluación<Required /></FieldLabel>
         <Input
           id="title"
           required
@@ -237,7 +267,7 @@ export function AssignmentForm({
       {modality === "Presencial" ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field>
-            <FieldLabel htmlFor="openDate" className="text-white">Fecha y hora</FieldLabel>
+            <FieldLabel htmlFor="openDate" className="text-white">Fecha y hora<Required /></FieldLabel>
             <Input
               id="openDate"
               type="datetime-local"
@@ -249,7 +279,7 @@ export function AssignmentForm({
           </Field>
 
           <Field>
-            <FieldLabel htmlFor="duration" className="text-white">Duración (horas)</FieldLabel>
+            <FieldLabel htmlFor="duration" className="text-white">Duración (horas)<Required /></FieldLabel>
             <Input
               id="duration"
               type="number"
@@ -271,7 +301,7 @@ export function AssignmentForm({
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field>
-            <FieldLabel htmlFor="openDate" className="text-white">Fecha de inicio</FieldLabel>
+            <FieldLabel htmlFor="openDate" className="text-white">Fecha de inicio<Required /></FieldLabel>
             <Input
               id="openDate"
               type="datetime-local"
@@ -283,7 +313,7 @@ export function AssignmentForm({
           </Field>
 
           <Field>
-            <FieldLabel htmlFor="dueDate" className="text-white">Fecha de entrega</FieldLabel>
+            <FieldLabel htmlFor="dueDate" className="text-white">Fecha de entrega<Required /></FieldLabel>
             <Input
               id="dueDate"
               type="datetime-local"
@@ -353,6 +383,11 @@ export function AssignmentForm({
             {guidelineFile?.name ?? currentGuideline ?? "Sin pauta"}
           </P>
         </div>
+        {!guidelineFile && !currentGuideline && (
+          <P className="mt-1 text-xs text-demigrey">
+            Sin pauta, la revisión con IA será menos precisa. Puedes subirla más tarde.
+          </P>
+        )}
       </Field>
 
       <Field>
