@@ -1,6 +1,7 @@
 import shutil
 import uuid
 from collections import defaultdict
+from datetime import datetime
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
@@ -201,6 +202,15 @@ async def get_assignment(assignment_id: uuid.UUID, user_id: uuid.UUID | None = N
     return detail.model_copy(update={"answer_grades": answer_grades, "submission_history": submission_history})
 
 
+def _check_dates(open_date: datetime | None, due_date: datetime | None) -> None:
+    """Without a due date an assignment never closes, so the AI pipeline never
+    runs for it; and it can't close before it opens."""
+    if due_date is None:
+        raise HTTPException(status_code=422, detail="La evaluación necesita una fecha de entrega.")
+    if open_date is not None and due_date <= open_date:
+        raise HTTPException(status_code=422, detail="La fecha de entrega debe ser posterior a la fecha de inicio.")
+
+
 @router.patch("/{assignment_id}", response_model=AssignmentRead)
 async def update_assignment(assignment_id: uuid.UUID, payload: AssignmentUpdate, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
@@ -214,6 +224,11 @@ async def update_assignment(assignment_id: uuid.UUID, payload: AssignmentUpdate,
 
     update_data = payload.model_dump(exclude_unset=True)
     questions_data = update_data.pop("questions", None)
+    # Checked against the result of the edit, not just the fields sent.
+    _check_dates(
+        update_data.get("open_date", assignment.open_date),
+        update_data.get("due_date", assignment.due_date),
+    )
 
     for field, value in update_data.items():
         setattr(assignment, field, value)
@@ -265,6 +280,7 @@ async def delete_assignment(assignment_id: uuid.UUID, db: AsyncSession = Depends
 
 @router.post("/", response_model=AssignmentRead, status_code=201)
 async def create_assignment(payload: AssignmentCreate, db: AsyncSession = Depends(get_db)):
+    _check_dates(payload.open_date, payload.due_date)
     assignment = Assignment(
         section_id=payload.section_id,
         title=payload.title,
