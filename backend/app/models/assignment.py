@@ -6,7 +6,7 @@ from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Te
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
-from app.models.enums import AssignmentStatus, AssignmentType, pg_enum
+from app.models.enums import AssignmentStatus, AssignmentType, Modality, pg_enum
 
 if TYPE_CHECKING:
     from app.models.section import Section
@@ -33,6 +33,11 @@ class Assignment(Base):
     section_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("sections.id"))
     title: Mapped[str] = mapped_column(String)
     type: Mapped[AssignmentType] = mapped_column(pg_enum(AssignmentType, "assignment_type"))
+    # Only changes how the dates are entered and shown; both kinds store
+    # open_date/due_date, which drive the status.
+    modality: Mapped[Modality] = mapped_column(
+        pg_enum(Modality, "modality"), default=Modality.REMOTE, server_default=Modality.REMOTE.value
+    )
     rubric: Mapped[str | None] = mapped_column(Text)
     open_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     due_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

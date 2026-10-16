@@ -30,6 +30,14 @@ class AssignmentStatus(str, enum.Enum):
     CLOSED = "Cerrado"
 
 
+class Modality(str, enum.Enum):
+    """How an assignment is taken: in person at a set time (open_date +
+    duration = due_date), or remotely over a date range."""
+
+    IN_PERSON = "Presencial"
+    REMOTE = "Remoto"
+
+
 class AssignmentType(str, enum.Enum):
     HOMEWORK = "Tarea"
     QUIZ = "Ejercicio"

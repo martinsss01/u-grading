@@ -3,7 +3,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from app.models.enums import AssignmentStatus, AssignmentType, Semester
+from app.models.enums import AssignmentStatus, AssignmentType, Modality, Semester
 from app.schemas.submission import SubmissionRead
 
 
@@ -23,6 +23,7 @@ class AssignmentCreate(BaseModel):
     section_id: uuid.UUID
     title: str
     type: AssignmentType
+    modality: Modality = Modality.REMOTE
     rubric: str | None = None
     open_date: datetime | None = None
     due_date: datetime | None = None
@@ -36,6 +37,7 @@ class AssignmentRead(BaseModel):
     section_id: uuid.UUID
     title: str
     type: AssignmentType
+    modality: Modality
     status: AssignmentStatus
     rubric: str | None
     open_date: datetime | None
@@ -88,6 +90,7 @@ class AssignmentDetail(BaseModel):
     id: uuid.UUID
     title: str
     type: AssignmentType
+    modality: Modality
     status: AssignmentStatus
     rubric: str | None
     open_date: datetime | None
@@ -110,6 +113,7 @@ class StudentAssignment(BaseModel):
     id: uuid.UUID
     title: str
     type: AssignmentType
+    modality: Modality
     status: AssignmentStatus
     open_date: datetime | None
     due_date: datetime | None
@@ -127,6 +131,7 @@ class CourseAssignments(BaseModel):
 class AssignmentUpdate(BaseModel):
     title: str | None = None
     type: AssignmentType | None = None
+    modality: Modality | None = None
     rubric: str | None = None
     open_date: datetime | None = None
     due_date: datetime | None = None
