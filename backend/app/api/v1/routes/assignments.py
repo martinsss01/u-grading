@@ -5,7 +5,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -16,7 +16,14 @@ from app.db.session import get_db
 from app.models.assignment import Assignment, Question
 from app.models.enums import AssignmentStatus, Role
 from app.models.section import Section, SectionMember
-from app.models.submission import Answer, Submission
+from app.models.submission import (
+    Answer,
+    Submission,
+    SubmissionAnnotation,
+    SubmissionDocument,
+    SubmissionFile,
+    SubmissionRedaction,
+)
 from app.schemas.assignment import AssignmentCreate, AssignmentDetail, AssignmentRead, AssignmentUpdate, CourseAssignments
 from app.schemas.submission import PipelineOverview, PipelineRun, SubmissionRead, TaLoad
 from app.services.pipeline import worker
@@ -234,29 +241,26 @@ async def update_assignment(assignment_id: uuid.UUID, payload: AssignmentUpdate,
 
 @router.delete("/{assignment_id}", status_code=204)
 async def delete_assignment(assignment_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(
-        select(Assignment)
-        .where(Assignment.id == assignment_id)
-        .options(
-            selectinload(Assignment.questions),
-            selectinload(Assignment.submissions).selectinload(Submission.answers),
-            selectinload(Assignment.submissions).selectinload(Submission.files),
-        )
-    )
-    assignment = result.scalar_one_or_none()
-    if not assignment:
+    if await db.get(Assignment, assignment_id) is None:
         raise HTTPException(status_code=404)
 
-    for sub in assignment.submissions:
-        for ans in sub.answers:
-            await db.delete(ans)
-        for f in sub.files:
-            await db.delete(f)
-        await db.delete(sub)
-    for q in assignment.questions:
-        await db.delete(q)
-    await db.delete(assignment)
+    # None of these foreign keys cascade, so remove everything that hangs off
+    # the assignment's submissions (pipeline output and TA work included)
+    # before the submissions, questions and the assignment itself.
+    submission_ids = select(Submission.id).where(Submission.assignment_id == assignment_id)
+    for model in (Answer, SubmissionFile, SubmissionDocument, SubmissionAnnotation, SubmissionRedaction):
+        await db.execute(delete(model).where(model.submission_id.in_(submission_ids)))
+    await db.execute(delete(Submission).where(Submission.assignment_id == assignment_id))
+    await db.execute(delete(Question).where(Question.assignment_id == assignment_id))
+    await db.execute(delete(Assignment).where(Assignment.id == assignment_id))
     await db.commit()
+
+    # Files go only once the rows are gone: submissions (and their merged and
+    # anonymized PDFs) live under <UPLOAD_DIR>/<assignment_id>/, the statement
+    # and pauta under <UPLOAD_DIR>/assignments/<assignment_id>/.
+    upload_dir = Path(settings.UPLOAD_DIR)
+    for folder in (upload_dir / str(assignment_id), upload_dir / "assignments" / str(assignment_id)):
+        shutil.rmtree(folder, ignore_errors=True)
 
 
 @router.post("/", response_model=AssignmentRead, status_code=201)
