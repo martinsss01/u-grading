@@ -564,6 +564,7 @@ async def list_section_submissions(section_id: uuid.UUID, user_id: uuid.UUID, db
 
     return {
         "section": section,
+        "viewer_role": role,
         "assignments": [
             {
                 "id": a.id,

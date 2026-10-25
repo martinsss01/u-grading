@@ -4,7 +4,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
-from app.models.enums import AssignmentStatus, AssignmentType
+from app.models.enums import AssignmentStatus, AssignmentType, Role
 from app.schemas.section import SectionRead
 
 
@@ -141,6 +141,8 @@ class AssignmentWithSubmissions(BaseModel):
 
 class SectionSubmissions(BaseModel):
     section: SectionRead
+    # The viewer's role in this section (ADMIN for admins), so the UI can explain hidden submissions to TAs.
+    viewer_role: Role
     assignments: list[AssignmentWithSubmissions]
 
 

@@ -29,6 +29,9 @@ type Assignment = {
   type: string;
   open_date: string | null;
   due_date: string | null;
+  released: boolean;
+  processed_count: number;
+  total_count: number;
   submissions: Submission[];
 };
 
@@ -40,6 +43,7 @@ type SectionSubmissions = {
     section_number: number;
     course: { id: string; name: string; code: string };
   };
+  viewer_role: string;
   assignments: Assignment[];
 };
 
@@ -182,6 +186,9 @@ export default function SectionSubmissionsPage() {
                       {assignments.map((assignment) => {
                         const pending = assignment.submissions.filter((s) => s.needs_checking).length;
                         const status = computeAssignmentStatus(assignment.open_date, assignment.due_date, now);
+                        // TAs get no submissions until the pipeline releases them; show the received count instead.
+                        const hidden = !assignment.released && data?.viewer_role === "Ayudante";
+                        const count = hidden ? assignment.total_count : assignment.submissions.length;
                         return (
                           <li key={assignment.id}>
                             <button
@@ -197,8 +204,13 @@ export default function SectionSubmissionsPage() {
                                 )}
                               </div>
                               <span className="text-xs text-demigrey">
-                                {assignment.submissions.length} entrega{assignment.submissions.length !== 1 ? "s" : ""}
+                                {count} entrega{count !== 1 ? "s" : ""}
                               </span>
+                              {hidden && status === "Cerrado" && (
+                                <span className="rounded-full bg-grey/20 px-2.5 py-0.5 text-xs font-medium text-lemigrey">
+                                  Procesando {assignment.processed_count}/{assignment.total_count}
+                                </span>
+                              )}
                               {pending > 0 && (
                                 <span className="rounded-full bg-red/20 px-2.5 py-0.5 text-xs font-medium text-red-400">
                                   {pending} por revisar

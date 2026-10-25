@@ -7,7 +7,7 @@ import api from "@/lib/api";
 import { P } from "@/components/ui/p";
 import { computeAssignmentStatus, formatDate } from "@/lib/assignment";
 import { PIPELINE_LABELS, type ReviewSubmission, guidelineUrl, numberSubmissions } from "@/lib/review";
-import { AlertTriangle, FileText, Lock } from "lucide-react";
+import { AlertTriangle, FileText, Hourglass, Lock } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -24,6 +24,10 @@ type Assignment = {
   filename: string | null;
   guideline_filename: string | null;
   pipeline_started_at: string | null;
+  // False until the AI pipeline anonymized and distributed the submissions; TAs see none before that.
+  released: boolean;
+  processed_count: number;
+  total_count: number;
   submissions: Submission[];
 };
 
@@ -34,8 +38,11 @@ type SectionSubmissions = {
     year: number;
     course: { id: string; name: string; code: string };
   };
+  viewer_role: string;
   assignments: Assignment[];
 };
+
+const PROCESSING_POLL_MS = 30_000;
 
 const STATUS_COLORS: Record<string, string> = {
   Pendiente: "bg-grey/30 text-lemigrey",
@@ -77,6 +84,9 @@ export default function AssignmentSubmissionsPage() {
   const { sectionId, assignmentId } = useParams<{ sectionId: string; assignmentId: string }>();
   const [section, setSection] = useState<SectionSubmissions["section"] | null>(null);
   const [assignment, setAssignment] = useState<Assignment | null>(null);
+  const [viewerRole, setViewerRole] = useState<string | null>(null);
+  // Bumped to refetch while the pipeline is still processing the submissions.
+  const [reloadKey, setReloadKey] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   // Ticks once a minute so the status badge and "Queda" countdown stay live
@@ -108,14 +118,24 @@ export default function AssignmentSubmissionsPage() {
           return;
         }
         setSection(res.data.section);
+        setViewerRole(res.data.viewer_role);
         setAssignment(found);
       })
       .catch(() => setError("No se pudieron cargar las entregas."))
       .finally(() => setLoading(false));
-  }, [sectionId, assignmentId, router, userId]);
+  }, [sectionId, assignmentId, router, userId, reloadKey]);
 
   const a = assignment;
   const status = a ? computeAssignmentStatus(a.open_date, a.due_date, now) : null;
+  // TAs only see submissions once the pipeline anonymized and distributed them.
+  const hidden = a !== null && !a.released && viewerRole === "Ayudante";
+  const processing = hidden && status === "Cerrado";
+
+  useEffect(() => {
+    if (!processing) return;
+    const interval = setInterval(() => setReloadKey((k) => k + 1), PROCESSING_POLL_MS);
+    return () => clearInterval(interval);
+  }, [processing]);
   const numbered = numberSubmissions(a?.submissions ?? []);
   const mineCount = numbered.filter(({ sub }) => sub.assigned_ta_id === userId).length;
   const activeFilter = filter ?? (mineCount > 0 ? "mine" : "all");
@@ -247,13 +267,44 @@ export default function AssignmentSubmissionsPage() {
                   )}
                   {mineCount === 0 && (
                     <span className="text-xs text-demigrey">
-                      {a.submissions.length} entrega{a.submissions.length !== 1 ? "s" : ""}
+                      {hidden ? a.total_count : a.submissions.length} entrega
+                      {(hidden ? a.total_count : a.submissions.length) !== 1 ? "s" : ""}
                     </span>
                   )}
                 </div>
               </div>
 
-              {a.submissions.length === 0 ? (
+              {hidden ? (
+                <div className="flex gap-3 rounded-md bg-darkergrey px-4 py-3">
+                  <Hourglass className="mt-0.5 size-4 shrink-0 text-demigrey" />
+                  <div className="min-w-0 flex-1">
+                    <P className="text-sm text-white">
+                      {processing
+                        ? "Las entregas se están anonimizando y evaluando. Estarán disponibles al terminar el proceso."
+                        : "Las entregas estarán disponibles cuando cierre la evaluación y terminen de anonimizarse."}
+                    </P>
+                    {processing && a.total_count > 0 && (
+                      <>
+                        <div
+                          className="mt-3 h-1.5 overflow-hidden rounded-full bg-grey/30"
+                          role="progressbar"
+                          aria-valuemin={0}
+                          aria-valuemax={a.total_count}
+                          aria-valuenow={a.processed_count}
+                        >
+                          <div
+                            className="h-full rounded-full bg-red transition-all"
+                            style={{ width: `${(a.processed_count / a.total_count) * 100}%` }}
+                          />
+                        </div>
+                        <P className="mt-1.5 text-xs text-demigrey">
+                          {a.processed_count}/{a.total_count} procesadas
+                        </P>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ) : a.submissions.length === 0 ? (
                 <P className="text-sm text-demigrey">Sin entregas.</P>
               ) : (
                 <div className="overflow-x-auto">
