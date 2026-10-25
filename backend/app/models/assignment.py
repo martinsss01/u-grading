@@ -52,6 +52,8 @@ class Assignment(Base):
     guideline_filename: Mapped[str | None] = mapped_column(String)
     # Set when the AI pipeline was started for this assignment (on close, or manually).
     pipeline_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Set once the pipeline finished and submissions were distributed; until then TAs see none of them.
+    released_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # Professor-controlled visibility for students: "Publicar enunciado" shows the
     # assignment itself; "Publicar corrección" shows their grades and TA comments.
     statement_published: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())

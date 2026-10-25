@@ -48,6 +48,8 @@ class Submission(Base):
     assigned_ta_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
     # Set when automatic anonymization may have missed the student's name.
     needs_anonymization_check: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    # Set when a teacher censored a failed submission by hand, which releases it to TAs.
+    manual_anonymization_done: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
 
     user: Mapped["User"] = relationship(foreign_keys=[user_id])
     assigned_ta: Mapped["User | None"] = relationship(foreign_keys=[assigned_ta_id])
