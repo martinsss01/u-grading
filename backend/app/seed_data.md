@@ -65,30 +65,31 @@ Todos los cursos deben existir siempre; edita solo los números.
 
 ## 2. Usuarios
 
-`Rol global` es `User.role`. Los ayudantes tienen rol global **Estudiante**:
-ser ayudante es un rol *por sección* (`SectionMember.role`), y el layout de
-estudiante solo deja entrar a `Estudiante`, así tienen su vista de cursos.
+Los usuarios no tienen un rol propio: Profesor, Ayudante y Estudiante son
+roles *por sección* (`SectionMember.role`, ver §4). `Administrador` (`Sí`/`No`)
+es un permiso de la plataforma (`User.is_admin`) para administrar usuarios,
+cursos y secciones.
 
-| Nombre | Email | Rol global |
+| Nombre | Email | Administrador |
 |---|---|---|
-| Admin | admin@ugrading.cl | Administrador |
-| Profesor1 | profesor1@ugrading.cl | Profesor |
-| Profesor2 | profesor2@ugrading.cl | Profesor |
-| Profesor3 | profesor3@ugrading.cl | Profesor |
-| Ayudante1 | ayudante1@ugrading.cl | Estudiante |
-| Ayudante2 | ayudante2@ugrading.cl | Estudiante |
-| Ayudante3 | ayudante3@ugrading.cl | Estudiante |
-| Ayudante4 | ayudante4@ugrading.cl | Estudiante |
-| Estudiante1 | estudiante1@ugrading.cl | Estudiante |
-| Estudiante2 | estudiante2@ugrading.cl | Estudiante |
-| Estudiante3 | estudiante3@ugrading.cl | Estudiante |
-| Estudiante4 | estudiante4@ugrading.cl | Estudiante |
-| Estudiante5 | estudiante5@ugrading.cl | Estudiante |
-| Estudiante6 | estudiante6@ugrading.cl | Estudiante |
-| Estudiante7 | estudiante7@ugrading.cl | Estudiante |
-| Estudiante8 | estudiante8@ugrading.cl | Estudiante |
-| Estudiante9 | estudiante9@ugrading.cl | Estudiante |
-| Estudiante10 | estudiante10@ugrading.cl | Estudiante |
+| Admin | admin@ugrading.cl | Sí |
+| Profesor1 | profesor1@ugrading.cl | No |
+| Profesor2 | profesor2@ugrading.cl | No |
+| Profesor3 | profesor3@ugrading.cl | No |
+| Ayudante1 | ayudante1@ugrading.cl | No |
+| Ayudante2 | ayudante2@ugrading.cl | No |
+| Ayudante3 | ayudante3@ugrading.cl | No |
+| Ayudante4 | ayudante4@ugrading.cl | No |
+| Estudiante1 | estudiante1@ugrading.cl | No |
+| Estudiante2 | estudiante2@ugrading.cl | No |
+| Estudiante3 | estudiante3@ugrading.cl | No |
+| Estudiante4 | estudiante4@ugrading.cl | No |
+| Estudiante5 | estudiante5@ugrading.cl | No |
+| Estudiante6 | estudiante6@ugrading.cl | No |
+| Estudiante7 | estudiante7@ugrading.cl | No |
+| Estudiante8 | estudiante8@ugrading.cl | No |
+| Estudiante9 | estudiante9@ugrading.cl | No |
+| Estudiante10 | estudiante10@ugrading.cl | No |
 
 ---
 

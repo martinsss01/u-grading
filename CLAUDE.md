@@ -56,12 +56,16 @@ Ports: frontend **http://localhost:3001** (docker), backend http://localhost:800
 - `main.py` — app, CORS, mounts `/api/v1`, starts the pipeline worker on lifespan.
 - `app/api/v1/routes/` — `auth`, `users`, `courses`, `sections`, `assignments`, `submissions`.
 - `app/api/v1/permissions.py` — section-role checks. **No real auth yet:** the
-  client sends the acting user's id; admins pass every check.
+  client sends the acting user's id; admins (`User.is_admin`) pass every check.
+- **Roles only exist per section** (`SectionMember.role`: Profesor/Ayudante/Estudiante);
+  a user has no role of their own. Admin is a platform permission (`User.is_admin`),
+  never a section role. `GET /users/{id}/sections` lists a user's sections with their role.
 - `app/models/` — `User`, `Course`, `Section`/`SectionMember`, `Assignment`/`Question`,
   `Submission`, `SubmissionFile`, `Answer`, `SubmissionDocument`,
   `SubmissionAnnotation`, `SubmissionRedaction`.
 - `app/models/enums.py` — enum **values are Spanish** and stored as native PG enums
-  (`Role`: Administrador/Profesor/Ayudante/Estudiante; `Semester`: Otoño/Primavera/Verano;
+  (`Role`: Profesor/Ayudante/Estudiante for section members — the PG enum still has a legacy
+  `Administrador` value that's rejected as a section role; `Semester`: Otoño/Primavera/Verano;
   `AssignmentType`: Tarea/Ejercicio/Control/Examen). `AssignmentStatus`
   (Pendiente/Abierto/Cerrado) is computed from dates, never stored.
 - `app/services/pipeline/` — AI grading pipeline run by `worker.py`/`runner.py`:
@@ -79,8 +83,11 @@ Ports: frontend **http://localhost:3001** (docker), backend http://localhost:800
 - `app/submissions/[sectionId]/[assignmentId]/[submissionId]` — TA correction flow.
 - `app/scan/[assignmentId]` — phone scan upload page (uses `lib/scanApi.ts`).
 - `components/pdf-review/` — PDF viewer with annotations / redaction ("Censurar").
-- `components/role-guard.tsx` — client-side role gate; logged-in user is in
-  `localStorage["user"]`; forbidden roles get a 404.
+- `components/role-guard.tsx` — client-side gates: `RoleGuard` (has the role in some
+  section) and `AdminGuard` (`is_admin`); logged-in user is in `localStorage["user"]`
+  (`lib/user.ts`); forbidden users get a 404.
+- `app/home/` — area picker for users with several areas (e.g. admin + Profesor);
+  Ayudante and Estudiante count as one area, so TAs skip it (`startPage` in `lib/user.ts`).
 - `lib/api.ts` — axios client (`NEXT_PUBLIC_API_URL`).
 
 ## Domain glossary

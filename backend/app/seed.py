@@ -64,7 +64,7 @@ def _parse_list(cell: str) -> list[str]:
 
 def load_seed_data(text: str) -> dict:
     courses: list[dict] = []  # {code, name, sections: [SectionKey]}
-    users: dict[str, dict] = {}  # email -> {name, email, role}
+    users: dict[str, dict] = {}  # email -> {name, email, is_admin}
     groups: dict[str, list[str]] = {}
     memberships: dict[tuple[str, SectionKey], Role] = {}  # (email, section) -> role
 
@@ -85,10 +85,12 @@ def load_seed_data(text: str) -> dict:
                 ]
                 courses.append({"code": code, "name": name, "sections": sections})
         elif first == "Nombre":
-            for name, email, role in rows:
+            for name, email, admin in rows:
                 if email in users:
                     raise ValueError(f"Usuario duplicado: {email}")
-                users[email] = {"name": name, "email": email, "role": Role(role)}
+                if admin not in ("Sí", "No"):
+                    raise ValueError(f"{email}: la columna Administrador debe ser Sí o No, no {admin!r}")
+                users[email] = {"name": name, "email": email, "is_admin": admin == "Sí"}
         elif first == "Grupo":
             for name, members in rows:
                 groups[name] = _parse_list(members)
@@ -129,10 +131,8 @@ def load_seed_data(text: str) -> dict:
 def _print_summary(data: dict) -> None:
     n_sections = sum(len(c["sections"]) for c in data["courses"])
     print(f"Cursos: {len(data['courses'])} · Secciones: {n_sections}")
-    by_role: dict[str, int] = {}
-    for u in data["users"].values():
-        by_role[u["role"].value] = by_role.get(u["role"].value, 0) + 1
-    print(f"Usuarios: {len(data['users'])} {by_role}")
+    admins = sum(u["is_admin"] for u in data["users"].values())
+    print(f"Usuarios: {len(data['users'])} ({admins} administrador{'es' if admins != 1 else ''})")
     print(f"Membresías: {len(data['memberships'])}")
     per_user: dict[str, list[str]] = {}
     for (email, (code, year, semester, n)), role in sorted(data["memberships"].items(), key=lambda kv: (kv[0][0], kv[0][1][1], kv[0][1][0])):
@@ -149,8 +149,7 @@ async def seed(data: dict) -> None:
             email: User(
                 name=u["name"],
                 email=email,
-                role=u["role"],
-                is_admin=u["role"] == Role.ADMIN,
+                is_admin=u["is_admin"],
                 hashed_password=pw_hash,
             )
             for email, u in data["users"].items()

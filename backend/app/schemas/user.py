@@ -11,8 +11,7 @@ class UserRead(BaseModel):
     id: uuid.UUID
     name: str
     email: str
-    # Deprecated: roles only exist per section (see UserSectionRead); dropped once the frontend stops reading it.
-    role: Role
+    # Platform-level permission; roles only exist per section (see UserSectionRead).
     is_admin: bool
     created_at: datetime
 
@@ -23,8 +22,6 @@ class UserCreate(BaseModel):
     name: str
     email: str
     password: str
-    # Deprecated, see UserRead.role. Administrador also makes the user an admin.
-    role: Role = Role.STUDENT
     is_admin: bool = False
 
 
@@ -32,7 +29,6 @@ class UserUpdate(BaseModel):
     name: str | None = None
     email: str | None = None
     password: str | None = None
-    role: Role | None = None
     is_admin: bool | None = None
 
 

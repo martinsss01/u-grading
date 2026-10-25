@@ -69,8 +69,7 @@ async def create_user(payload: UserCreate, db: AsyncSession = Depends(get_db)):
         name=payload.name,
         email=payload.email,
         hashed_password=hash_password(payload.password),
-        role=payload.role,
-        is_admin=payload.is_admin or payload.role == Role.ADMIN,
+        is_admin=payload.is_admin,
     )
     db.add(user)
     await db.commit()
@@ -87,9 +86,6 @@ async def update_user(user_id: uuid.UUID, payload: UserUpdate, db: AsyncSession 
 
     update_data = payload.model_dump(exclude_unset=True)
     password = update_data.pop("password", None)
-    # Until the deprecated global role is dropped, changing it to or from Administrador sets is_admin.
-    if "role" in update_data and "is_admin" not in update_data:
-        update_data["is_admin"] = update_data["role"] == Role.ADMIN
     if update_data.get("is_admin") is False and user.is_admin:
         await _ensure_not_last_admin(db)
 
