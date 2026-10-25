@@ -164,6 +164,7 @@ class PipelineOverview(BaseModel):
     title: str
     status: AssignmentStatus
     pipeline_started_at: datetime | None
+    released_at: datetime | None
     has_guideline: bool
     tas: list[TaLoad]
     submissions: list[ReviewSubmissionRead]

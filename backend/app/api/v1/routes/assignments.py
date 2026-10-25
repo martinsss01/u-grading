@@ -451,6 +451,7 @@ async def _pipeline_overview(db: AsyncSession, assignment_id: uuid.UUID) -> Pipe
         title=assignment.title,
         status=assignment.status,
         pipeline_started_at=assignment.pipeline_started_at,
+        released_at=assignment.released_at,
         has_guideline=assignment.guideline_path is not None,
         tas=loads,
         submissions=submissions,

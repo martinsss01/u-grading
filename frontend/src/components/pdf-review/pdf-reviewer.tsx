@@ -53,10 +53,12 @@ export default function PdfReviewer({
   submissionId,
   readOnly,
   review,
+  initialTool = "text",
 }: {
   submissionId: string;
   readOnly: boolean;
   review?: ReviewInfo;
+  initialTool?: Tool;
 }) {
   // Never server-rendered (see index.tsx), so localStorage is safe here.
   const [userId] = useState(readUserId);
@@ -71,7 +73,7 @@ export default function PdfReviewer({
   const [editing, setEditing] = useState<{ id: string; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [tool, setTool] = useState<Tool>("text");
+  const [tool, setTool] = useState<Tool>(initialTool);
   const [zoomIdx, setZoomIdx] = useState(2);
   const [viewportWidth, setViewportWidth] = useState(0);
   const draftInputRef = useRef<HTMLTextAreaElement | null>(null);

@@ -131,6 +131,8 @@ export type ReviewSubmission = {
   assigned_ta_id: string | null;
   assigned_ta_name: string | null;
   needs_anonymization_check: boolean;
+  // A teacher censored it by hand after the pipeline failed, which released it to a TA.
+  manual_anonymization_done: boolean;
 };
 
 /** "Entrega N" labels, numbered by submission time so every view agrees on them. */
@@ -145,6 +147,8 @@ export type PipelineOverview = {
   title: string;
   status: string;
   pipeline_started_at: string | null;
+  // Set once the submissions were anonymized and distributed; TAs see none before that.
+  released_at: string | null;
   has_guideline: boolean;
   tas: { id: string; name: string; count: number; total_difficulty: number }[];
   submissions: ReviewSubmission[];
@@ -165,6 +169,15 @@ export async function runPipeline(assignmentId: string, userId: string, force = 
 export async function retryPipeline(submissionId: string, userId: string, force = false) {
   return (
     await api.post<ReviewSubmission>(`/api/v1/submissions/${submissionId}/pipeline/retry`, { user_id: userId, force })
+  ).data;
+}
+
+/** A teacher confirms they censored a failed submission by hand, which releases it to a TA. */
+export async function confirmManualAnonymization(submissionId: string, userId: string) {
+  return (
+    await api.post<ReviewSubmission>(`/api/v1/submissions/${submissionId}/manual-anonymization`, null, {
+      params: { user_id: userId },
+    })
   ).data;
 }
 

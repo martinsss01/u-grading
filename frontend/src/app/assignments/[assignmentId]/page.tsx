@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { AlertTriangle, RotateCw, Sparkles } from "lucide-react";
 import { P } from "@/components/ui/p";
@@ -15,6 +16,20 @@ import {
   setAssignee,
 } from "@/lib/review";
 
+
+// Where the evaluation is in the hidden phase: TAs only see submissions once it is "Distribuida".
+const PHASE_CLASS: Record<string, string> = {
+  Pendiente: "bg-grey/30 text-lemigrey",
+  Abierta: "bg-green-500/20 text-green-400",
+  Procesando: "bg-yellow-500/20 text-yellow-300",
+  Distribuida: "bg-whiteish/15 text-whiteish",
+};
+
+function phaseLabel(overview: PipelineOverview): string {
+  if (overview.released_at) return "Distribuida";
+  if (overview.status === "Cerrado") return "Procesando";
+  return overview.status === "Abierto" ? "Abierta" : "Pendiente";
+}
 
 const STATUS_CLASS: Record<string, string> = {
   not_started: "bg-grey/20 text-lemigrey",
@@ -96,7 +111,19 @@ export default function AssignmentCorrectionsPage() {
           <>
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <h1 className="text-2xl font-bold text-white">{overview.title} · Correcciones</h1>
+                <div className="flex flex-wrap items-center gap-3">
+                  <h1 className="text-2xl font-bold text-white">{overview.title} · Correcciones</h1>
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${PHASE_CLASS[phaseLabel(overview)]}`}
+                    title={
+                      overview.released_at
+                        ? `Repartida a los ayudantes el ${formatDate(overview.released_at)}`
+                        : "Los ayudantes verán las entregas cuando estén anonimizadas y repartidas"
+                    }
+                  >
+                    {phaseLabel(overview)}
+                  </span>
+                </div>
                 <P className="mt-1 text-sm text-demigrey">
                   {overview.pipeline_started_at
                     ? `Revisión con IA iniciada el ${formatDate(overview.pipeline_started_at)}`
@@ -198,19 +225,42 @@ export default function AssignmentCorrectionsPage() {
                             </span>
                           </td>
                           <td className="py-2.5 pr-3 align-top">
-                            <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_CLASS[s.pipeline_status]}`}>
-                              {PIPELINE_LABELS[s.pipeline_status]}
-                            </span>
-                            {s.pipeline_status === "failed" && (
+                            {s.pipeline_status === "failed" && s.manual_anonymization_done ? (
+                              <span className="rounded-full bg-green-500/20 px-2.5 py-0.5 text-xs font-medium text-green-400">
+                                Anonimizada a mano
+                              </span>
+                            ) : s.pipeline_status === "failed" ? (
+                              <span className="rounded-full bg-red/20 px-2.5 py-0.5 text-xs font-medium text-red-400">
+                                Fallo de Anonimización
+                              </span>
+                            ) : (
+                              <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_CLASS[s.pipeline_status]}`}>
+                                {PIPELINE_LABELS[s.pipeline_status]}
+                              </span>
+                            )}
+                            {s.pipeline_status === "failed" && !s.manual_anonymization_done && (
                               <>
                                 <P className="mt-1 max-w-xs text-[11px] text-red-300">{s.pipeline_error}</P>
-                                <button
-                                  onClick={() => act(() => retryPipeline(s.id, userId), "No se pudo reintentar.")}
-                                  disabled={busy}
-                                  className="mt-1 text-xs font-medium text-demigrey hover:text-white disabled:opacity-50"
-                                >
-                                  Reintentar
-                                </button>
+                                <P className="mt-0.5 max-w-xs text-[11px] text-demigrey">
+                                  Los ayudantes no la verán hasta que se anonimice.
+                                </P>
+                                <div className="mt-1 flex gap-3">
+                                  {s.document?.status === "ready" && (
+                                    <Link
+                                      href={`/assignments/${assignmentId}/anonymize/${s.id}`}
+                                      className="text-xs font-medium text-red-300 hover:text-white"
+                                    >
+                                      Anonimizar manualmente
+                                    </Link>
+                                  )}
+                                  <button
+                                    onClick={() => act(() => retryPipeline(s.id, userId), "No se pudo reintentar.")}
+                                    disabled={busy}
+                                    className="text-xs font-medium text-demigrey hover:text-white disabled:opacity-50"
+                                  >
+                                    Reintentar
+                                  </button>
+                                </div>
                               </>
                             )}
                           </td>
