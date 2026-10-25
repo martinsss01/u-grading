@@ -33,7 +33,7 @@ export default function ReviewSubmissionPage() {
 
   useEffect(() => {
     api
-      .get<SectionSubmissions>(`/api/v1/submissions/section/${sectionId}`)
+      .get<SectionSubmissions>(`/api/v1/submissions/section/${sectionId}`, { params: { user_id: userId } })
       .then((res) => {
         const assignment = res.data.assignments.find((a) => a.id === assignmentId);
         const found = assignment?.submissions.find((s) => s.id === submissionId) ?? null;
@@ -42,7 +42,7 @@ export default function ReviewSubmissionPage() {
         if (!found) setError("No se encontró la entrega.");
       })
       .catch(() => setError("No se pudo cargar la entrega."));
-  }, [sectionId, assignmentId, submissionId]);
+  }, [sectionId, assignmentId, submissionId, userId]);
 
   return (
     <main className="flex h-[calc(100vh-64px)] flex-col">

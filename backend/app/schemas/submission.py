@@ -131,6 +131,10 @@ class AssignmentWithSubmissions(BaseModel):
     filename: str | None
     guideline_filename: str | None = None
     pipeline_started_at: datetime | None = None
+    # Until released, TAs get an empty `submissions`; the counts let them see the pipeline's progress.
+    released: bool = False
+    processed_count: int = 0
+    total_count: int = 0
     submissions: list[ReviewSubmissionRead]
 
 

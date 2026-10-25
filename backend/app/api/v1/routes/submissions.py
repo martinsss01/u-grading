@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.api.v1.permissions import can_review_assignment, is_assignment_teacher
+from app.api.v1.permissions import can_review_assignment, is_assignment_teacher, section_staff_role, visible_to_ta
 from app.core.config import settings
 from app.db.session import get_db
 from app.models.assignment import Assignment
@@ -491,7 +491,13 @@ async def update_assignee(submission_id: uuid.UUID, body: AssigneeUpdate, db: As
 
 
 @router.get("/section/{section_id}", response_model=SectionSubmissions)
-async def list_section_submissions(section_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def list_section_submissions(section_id: uuid.UUID, user_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    """Teachers see every submission; TAs only the released, anonymized ones (see `visible_to_ta`)."""
+    role = await section_staff_role(db, user_id, section_id)
+    if role is None:
+        raise HTTPException(status_code=403, detail="Solo el equipo docente puede ver las entregas")
+    sees_all = role != Role.TA
+
     section_result = await db.execute(
         select(Section)
         .where(Section.id == section_id)
@@ -506,6 +512,7 @@ async def list_section_submissions(section_id: uuid.UUID, db: AsyncSession = Dep
         .order_by(Assignment.created_at)
     )
     assignments = assignments_result.scalars().all()
+    latest = {a.id: latest_per_user(a.submissions) for a in assignments}
 
     return {
         "section": section,
@@ -521,7 +528,10 @@ async def list_section_submissions(section_id: uuid.UUID, db: AsyncSession = Dep
                 "filename": a.filename,
                 "guideline_filename": a.guideline_filename,
                 "pipeline_started_at": a.pipeline_started_at,
-                "submissions": [review_view(sub) for sub in latest_per_user(a.submissions)],
+                "released": a.released_at is not None,
+                "processed_count": sum(s.pipeline_status in ("done", "failed") for s in latest[a.id]),
+                "total_count": len(latest[a.id]),
+                "submissions": [review_view(s) for s in latest[a.id] if sees_all or visible_to_ta(a, s)],
             }
             for a in assignments
         ],

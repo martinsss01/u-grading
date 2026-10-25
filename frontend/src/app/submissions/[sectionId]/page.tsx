@@ -87,13 +87,15 @@ export default function SectionSubmissionsPage() {
   }, []);
 
   useEffect(() => {
-    if (!localStorage.getItem("user")) {
+    const user = localStorage.getItem("user");
+    if (!user) {
       router.push("/");
       return;
     }
+    const userId = (JSON.parse(user) as { id?: string }).id;
 
     api
-      .get<SectionSubmissions>(`/api/v1/submissions/section/${sectionId}`)
+      .get<SectionSubmissions>(`/api/v1/submissions/section/${sectionId}`, { params: { user_id: userId } })
       .then((res) => setData(res.data))
       .catch(() => setError("No se pudieron cargar las entregas."))
       .finally(() => setLoading(false));

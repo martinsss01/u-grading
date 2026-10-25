@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.assignment import Assignment
 from app.models.enums import Role
 from app.models.section import SectionMember
+from app.models.submission import Submission
 from app.models.user import User
 
 
@@ -45,3 +46,36 @@ async def can_review_assignment(db: AsyncSession, user_id: uuid.UUID | None, ass
 
 async def is_assignment_teacher(db: AsyncSession, user_id: uuid.UUID | None, assignment_id: uuid.UUID) -> bool:
     return await _has_section_role(db, user_id, assignment_id, [Role.TEACHER])
+
+
+async def section_staff_role(db: AsyncSession, user_id: uuid.UUID | None, section_id: uuid.UUID) -> Role | None:
+    """ADMIN for admins; otherwise TEACHER or TA if the user is one in the section (teacher wins), else None."""
+    if user_id is None:
+        return None
+    user = await db.get(User, user_id)
+    if user is None:
+        return None
+    if user.role == Role.ADMIN:
+        return Role.ADMIN
+    roles = set(
+        (
+            await db.execute(
+                select(SectionMember.role).where(
+                    SectionMember.section_id == section_id,
+                    SectionMember.user_id == user_id,
+                    SectionMember.role.in_([Role.TEACHER, Role.TA]),
+                )
+            )
+        ).scalars()
+    )
+    if Role.TEACHER in roles:
+        return Role.TEACHER
+    return Role.TA if Role.TA in roles else None
+
+
+def visible_to_ta(assignment: Assignment, submission: Submission) -> bool:
+    """TAs only see a submission once its assignment was released and it is anonymized
+    (by the pipeline, or by a teacher after the pipeline failed)."""
+    return assignment.released_at is not None and (
+        submission.pipeline_status == "done" or submission.manual_anonymization_done
+    )

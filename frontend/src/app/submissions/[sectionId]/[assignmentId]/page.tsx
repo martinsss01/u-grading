@@ -100,7 +100,7 @@ export default function AssignmentSubmissionsPage() {
     }
 
     api
-      .get<SectionSubmissions>(`/api/v1/submissions/section/${sectionId}`)
+      .get<SectionSubmissions>(`/api/v1/submissions/section/${sectionId}`, { params: { user_id: userId } })
       .then((res) => {
         const found = res.data.assignments.find((a) => a.id === assignmentId);
         if (!found) {
@@ -112,7 +112,7 @@ export default function AssignmentSubmissionsPage() {
       })
       .catch(() => setError("No se pudieron cargar las entregas."))
       .finally(() => setLoading(false));
-  }, [sectionId, assignmentId, router]);
+  }, [sectionId, assignmentId, router, userId]);
 
   const a = assignment;
   const status = a ? computeAssignmentStatus(a.open_date, a.due_date, now) : null;
