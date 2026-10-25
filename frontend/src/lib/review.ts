@@ -35,24 +35,30 @@ export type Annotation = {
 
 export type AnnotationDraft = Pick<Annotation, "page" | "position" | "highlighted_text">;
 
-export function documentPdfUrl(submissionId: string, version: string) {
+export function documentPdfUrl(submissionId: string, viewerId: string, version: string) {
   // `version` busts the browser cache when the PDF is rebuilt.
-  return `${API_BASE}/api/v1/submissions/${submissionId}/document.pdf?v=${encodeURIComponent(version)}`;
+  return `${API_BASE}/api/v1/submissions/${submissionId}/document.pdf?viewer_id=${encodeURIComponent(viewerId)}&v=${encodeURIComponent(version)}`;
 }
 
-export async function getDocumentStatus(submissionId: string) {
-  return (await api.get<DocumentStatus>(`/api/v1/submissions/${submissionId}/document`)).data;
+export async function getDocumentStatus(submissionId: string, viewerId: string) {
+  return (
+    await api.get<DocumentStatus>(`/api/v1/submissions/${submissionId}/document`, { params: { viewer_id: viewerId } })
+  ).data;
 }
 
-export async function rebuildDocument(submissionId: string) {
-  return (await api.post<DocumentStatus>(`/api/v1/submissions/${submissionId}/document/rebuild`)).data;
+export async function rebuildDocument(submissionId: string, viewerId: string) {
+  return (
+    await api.post<DocumentStatus>(`/api/v1/submissions/${submissionId}/document/rebuild`, null, {
+      params: { viewer_id: viewerId },
+    })
+  ).data;
 }
 
-/** Teaching staff also get pending AI suggestions; everyone else only published comments. */
-export async function listAnnotations(submissionId: string, viewerId: string | null) {
+/** Teaching staff also get pending AI suggestions; the author only published comments. */
+export async function listAnnotations(submissionId: string, viewerId: string) {
   return (
     await api.get<Annotation[]>(`/api/v1/submissions/${submissionId}/annotations`, {
-      params: viewerId ? { viewer_id: viewerId } : {},
+      params: { viewer_id: viewerId },
     })
   ).data;
 }

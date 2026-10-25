@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.api.v1.permissions import can_review_assignment, is_assignment_teacher, section_staff_role, visible_to_ta
+from app.api.v1.permissions import is_assignment_teacher, section_staff_role, visible_to_ta
 from app.core.config import settings
 from app.db.session import get_db
 from app.models.assignment import Assignment
@@ -159,15 +159,19 @@ async def create_colab_submission(
 
 
 @router.get("/files/{file_id}")
-async def download_submission_file(file_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def download_submission_file(file_id: uuid.UUID, viewer_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    """The original file, for its author and teachers; TAs download the anonymized version instead."""
     file = await db.get(SubmissionFile, file_id)
     if file is None:
         raise HTTPException(status_code=404, detail="Archivo no encontrado")
+    if await _viewer_role(db, viewer_id, await _get_submission(db, file.submission_id)) == Role.TA:
+        raise HTTPException(status_code=403, detail="Los ayudantes solo pueden descargar archivos anonimizados")
     return FileResponse(file.file_path, filename=file.filename)
 
 
 @router.get("/{submission_id}/document", response_model=SubmissionDocumentRead)
-async def get_submission_document(submission_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def get_submission_document(submission_id: uuid.UUID, viewer_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    await _viewer_role(db, viewer_id, await _get_submission(db, submission_id))
     doc = await db.get(SubmissionDocument, submission_id)
     if doc is None:
         raise HTTPException(status_code=404, detail="Documento no encontrado")
@@ -175,11 +179,15 @@ async def get_submission_document(submission_id: uuid.UUID, db: AsyncSession = D
 
 
 @router.get("/{submission_id}/document.pdf")
-async def get_submission_document_pdf(submission_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def get_submission_document_pdf(
+    submission_id: uuid.UUID, viewer_id: uuid.UUID, db: AsyncSession = Depends(get_db)
+):
+    role = await _viewer_role(db, viewer_id, await _get_submission(db, submission_id))
     doc = await db.get(SubmissionDocument, submission_id)
     # Once the pipeline anonymized it, everyone (TAs and the student) sees the
-    # anonymized copy, so comments line up on the same pages for both.
-    path = doc and (doc.anonymized_pdf_path or doc.pdf_path)
+    # anonymized copy, so comments line up on the same pages for both. Until then
+    # only the author and teachers (who censor failed ones by hand) get the original.
+    path = doc and (doc.anonymized_pdf_path if role == Role.TA else doc.anonymized_pdf_path or doc.pdf_path)
     if not path or not Path(path).exists():
         raise HTTPException(status_code=404, detail="Documento no encontrado")
     # Inline so browsers and the in-app viewer display it instead of downloading.
@@ -194,10 +202,9 @@ async def get_submission_document_pdf(submission_id: uuid.UUID, db: AsyncSession
 
 @router.post("/{submission_id}/document/rebuild", response_model=SubmissionDocumentRead, status_code=202)
 async def rebuild_submission_document(
-    submission_id: uuid.UUID, background: BackgroundTasks, db: AsyncSession = Depends(get_db)
+    submission_id: uuid.UUID, viewer_id: uuid.UUID, background: BackgroundTasks, db: AsyncSession = Depends(get_db)
 ):
-    if await db.get(Submission, submission_id) is None:
-        raise HTTPException(status_code=404, detail="Submission not found")
+    await _viewer_role(db, viewer_id, await _get_submission(db, submission_id))
     await _mark_document_pending(db, submission_id)
     await db.commit()
     background.add_task(build_submission_pdf, submission_id)
@@ -241,19 +248,33 @@ async def _get_submission(db: AsyncSession, submission_id: uuid.UUID) -> Submiss
     return submission
 
 
+async def _viewer_role(db: AsyncSession, viewer_id: uuid.UUID | None, submission: Submission) -> Role:
+    """How the viewer relates to the submission: ADMIN/TEACHER/TA of its section, or STUDENT if they wrote it.
+
+    TAs get a 404 while the submission is hidden from them (see `visible_to_ta`); anyone else a 403.
+    """
+    assignment = await db.get(Assignment, submission.assignment_id)
+    role = await section_staff_role(db, viewer_id, assignment.section_id)
+    if role == Role.TA and not visible_to_ta(assignment, submission):
+        raise HTTPException(status_code=404, detail="Entrega no encontrada")
+    if role is not None:
+        return role
+    if viewer_id is not None and viewer_id == submission.user_id:
+        return Role.STUDENT
+    raise HTTPException(status_code=403, detail="No tienes acceso a esta entrega")
+
+
 async def _require_reviewer(db: AsyncSession, user_id: uuid.UUID | None, submission: Submission) -> None:
-    if not await can_review_assignment(db, user_id, submission.assignment_id):
+    if await _viewer_role(db, user_id, submission) == Role.STUDENT:
         raise HTTPException(status_code=403, detail="Solo el equipo docente puede hacer esto")
 
 
 @router.get("/{submission_id}/annotations", response_model=list[AnnotationRead])
-async def list_annotations(
-    submission_id: uuid.UUID, viewer_id: uuid.UUID | None = None, db: AsyncSession = Depends(get_db)
-):
-    """Published comments for everyone; the teaching staff also get pending AI suggestions."""
+async def list_annotations(submission_id: uuid.UUID, viewer_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    """Published comments for the author; the teaching staff also get pending AI suggestions."""
     submission = await _get_submission(db, submission_id)
     statuses = ["published"]
-    if await can_review_assignment(db, viewer_id, submission.assignment_id):
+    if await _viewer_role(db, viewer_id, submission) != Role.STUDENT:
         statuses.append("suggested")
     else:
         # Students see their TA's comments only once the professor publishes the review.
@@ -271,11 +292,7 @@ async def list_annotations(
 
 @router.post("/{submission_id}/annotations", response_model=AnnotationRead, status_code=201)
 async def create_annotation(submission_id: uuid.UUID, body: AnnotationCreate, db: AsyncSession = Depends(get_db)):
-    submission = await db.get(Submission, submission_id)
-    if submission is None:
-        raise HTTPException(status_code=404, detail="Submission not found")
-    if not await can_review_assignment(db, body.author_id, submission.assignment_id):
-        raise HTTPException(status_code=403, detail="Solo el equipo docente puede comentar")
+    await _require_reviewer(db, body.author_id, await _get_submission(db, submission_id))
     annotation = SubmissionAnnotation(submission_id=submission_id, **body.model_dump())
     db.add(annotation)
     await db.commit()

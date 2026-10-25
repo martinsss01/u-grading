@@ -459,17 +459,18 @@ async def _pipeline_overview(db: AsyncSession, assignment_id: uuid.UUID) -> Pipe
 
 @router.get("/{assignment_id}/pipeline", response_model=PipelineOverview)
 async def get_pipeline_overview(assignment_id: uuid.UUID, user_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    """AI pipeline progress, difficulty and TA workload for one assignment (teaching staff only)."""
-    if not await can_review_assignment(db, user_id, assignment_id):
-        raise HTTPException(status_code=403, detail="Solo el equipo docente puede ver esto")
+    """AI pipeline progress, difficulty and TA workload for one assignment (teachers only: it lists
+    every submission, including ones still hidden from TAs)."""
+    if not await is_assignment_teacher(db, user_id, assignment_id):
+        raise HTTPException(status_code=403, detail="Solo el profesor puede ver esto")
     return await _pipeline_overview(db, assignment_id)
 
 
 @router.post("/{assignment_id}/pipeline/run", response_model=PipelineOverview)
 async def run_pipeline(assignment_id: uuid.UUID, body: PipelineRun, db: AsyncSession = Depends(get_db)):
     """Start the pipeline now (without waiting for the due date), or re-run it with `force`."""
-    if not await can_review_assignment(db, body.user_id, assignment_id):
-        raise HTTPException(status_code=403, detail="Solo el equipo docente puede procesar entregas")
+    if not await is_assignment_teacher(db, body.user_id, assignment_id):
+        raise HTTPException(status_code=403, detail="Solo el profesor puede procesar entregas")
     assignment = await db.get(Assignment, assignment_id)
     if assignment is None:
         raise HTTPException(status_code=404)

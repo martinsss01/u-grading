@@ -60,6 +60,7 @@ export default function PdfReviewer({
 }) {
   // Never server-rendered (see index.tsx), so localStorage is safe here.
   const [userId] = useState(readUserId);
+  const viewerId = userId ?? "";
   const [doc, setDoc] = useState<DocumentStatus | null>(null);
   const [docError, setDocError] = useState<string | null>(null);
   const [pollKey, setPollKey] = useState(0);
@@ -84,7 +85,7 @@ export default function PdfReviewer({
     let timer: ReturnType<typeof setTimeout> | undefined;
     const tick = async () => {
       try {
-        const status = await getDocumentStatus(submissionId);
+        const status = await getDocumentStatus(submissionId, viewerId);
         if (cancelled) return;
         setDoc(status);
         setDocError(null);
@@ -98,13 +99,13 @@ export default function PdfReviewer({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [submissionId, pollKey]);
+  }, [submissionId, viewerId, pollKey]);
 
   useEffect(() => {
-    listAnnotations(submissionId, userId)
+    listAnnotations(submissionId, viewerId)
       .then((list) => setAnnotations(sortAnnotations(list)))
       .catch(() => setActionError("No se pudieron cargar los comentarios."));
-  }, [submissionId, userId]);
+  }, [submissionId, viewerId]);
 
   useEffect(() => {
     if (tool !== "censor" || !userId) return;
@@ -119,7 +120,7 @@ export default function PdfReviewer({
     setActionError(null);
     try {
       setRedactions(await change());
-      setDoc(await getDocumentStatus(submissionId));
+      setDoc(await getDocumentStatus(submissionId, viewerId));
     } catch {
       setActionError("No se pudo actualizar la censura.");
     } finally {
@@ -248,7 +249,7 @@ export default function PdfReviewer({
 
   async function rebuild() {
     try {
-      setDoc(await rebuildDocument(submissionId));
+      setDoc(await rebuildDocument(submissionId, viewerId));
       setPollKey((k) => k + 1);
     } catch {
       setDocError("No se pudo regenerar el PDF.");
@@ -306,7 +307,7 @@ export default function PdfReviewer({
             </button>
             {ready && (
               <a
-                href={documentPdfUrl(submissionId, doc.updated_at)}
+                href={documentPdfUrl(submissionId, viewerId, doc.updated_at)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="ml-2 inline-flex items-center gap-1 text-xs text-demigrey hover:text-white"
@@ -342,7 +343,7 @@ export default function PdfReviewer({
           )}
           {ready && viewportWidth > 0 && (
             <PdfPages
-              url={documentPdfUrl(submissionId, doc.updated_at)}
+              url={documentPdfUrl(submissionId, viewerId, doc.updated_at)}
               width={pageWidth}
               tool={readOnly ? null : tool}
               annotations={annotations}

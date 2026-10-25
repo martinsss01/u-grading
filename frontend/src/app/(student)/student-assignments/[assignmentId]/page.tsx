@@ -125,6 +125,9 @@ export default function AssignmentDetailPage() {
   // Ticks once a minute so the "Queda(n)" countdown below stays live without
   // a page reload.
   const [now, setNow] = useState(() => Date.now());
+  const [userId] = useState(() =>
+    typeof window === "undefined" ? "" : ((JSON.parse(localStorage.getItem("user") ?? "{}") as { id?: string }).id ?? ""),
+  );
 
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 60_000);
@@ -494,7 +497,7 @@ export default function AssignmentDetailPage() {
                         {s.files.map((f) => (
                           <li key={f.id}>
                             <a
-                              href={`${API_BASE}/api/v1/submissions/files/${f.id}`}
+                              href={`${API_BASE}/api/v1/submissions/files/${f.id}?viewer_id=${encodeURIComponent(userId)}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="inline-flex min-w-0 items-center gap-1 text-xs text-demigrey underline-offset-2 hover:text-white hover:underline"
