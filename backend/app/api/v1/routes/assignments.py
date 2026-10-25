@@ -233,9 +233,10 @@ async def update_assignment(assignment_id: uuid.UUID, payload: AssignmentUpdate,
     for field, value in update_data.items():
         setattr(assignment, field, value)
 
-    # Reopened (due date moved to the future): run the AI pipeline again when it closes.
+    # Reopened (due date moved to the future): hide it from TAs and run the AI pipeline again when it closes.
     if assignment.status != AssignmentStatus.CLOSED:
         assignment.pipeline_started_at = None
+        assignment.released_at = None
 
     if questions_data is not None:
         for q in list(assignment.questions):

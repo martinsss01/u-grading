@@ -2,10 +2,13 @@
 
 import logging
 import uuid
+from datetime import datetime, timezone
 
 from sqlalchemy import func, select, text
 
 from app.db.session import AsyncSessionLocal
+from app.models.assignment import Assignment
+from app.models.enums import AssignmentStatus
 from app.models.submission import Submission, SubmissionDocument, SubmissionRedaction
 from app.services.pdf_conversion import build_submission_pdf
 from app.services.pipeline.anonymize import build_anonymized_pdf
@@ -87,10 +90,14 @@ async def process_submission(submission_id: uuid.UUID) -> None:
 
 
 async def distribute_if_complete(assignment_id: uuid.UUID) -> None:
-    """Share out the assignment once none of its submissions are still waiting or running."""
+    """Once the assignment is closed and none of its submissions are still waiting or running,
+    share them out and release the assignment to its TAs."""
     async with AsyncSessionLocal() as db:
         # Serializes this check-and-distribute per assignment across concurrent finishers.
         await db.execute(text("SELECT pg_advisory_xact_lock(hashtext(:key))"), {"key": str(assignment_id)})
+        assignment = await db.get(Assignment, assignment_id)
+        if assignment is None or assignment.status != AssignmentStatus.CLOSED:
+            return
         pending = await db.scalar(
             select(func.count())
             .select_from(Submission)
@@ -104,4 +111,7 @@ async def distribute_if_complete(assignment_id: uuid.UUID) -> None:
         assigned = await distribute_assignment(assignment_id)
         if assigned:
             logger.info("Assigned %s submissions of assignment %s to TAs", assigned, assignment_id)
+        if assignment.released_at is None:
+            assignment.released_at = datetime.now(timezone.utc)
+            logger.info("Released assignment %s to TAs", assignment_id)
         await db.commit()

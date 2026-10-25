@@ -9,7 +9,7 @@ import uuid
 from collections.abc import Hashable, Sequence
 from typing import TypeVar
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
 from app.db.session import AsyncSessionLocal
 from app.models.assignment import Assignment
@@ -71,7 +71,8 @@ async def distribute_assignment(assignment_id: uuid.UUID) -> int:
 
     The first time, the whole set is dealt at once; afterwards (retries, manual
     re-runs) each new one goes to the least-loaded TA so earlier work isn't reshuffled.
-    Failed submissions count with the median difficulty so they're still shared out.
+    Failed submissions are held back until a teacher anonymizes them by hand; those
+    then count with the median difficulty.
     """
     async with AsyncSessionLocal() as db:
         assignment = await db.get(Assignment, assignment_id)
@@ -88,7 +89,7 @@ async def distribute_assignment(assignment_id: uuid.UUID) -> int:
             await db.execute(
                 select(Submission).where(
                     Submission.assignment_id == assignment_id,
-                    Submission.pipeline_status.in_(["done", "failed"]),
+                    or_(Submission.pipeline_status == "done", Submission.manual_anonymization_done),
                 )
             )
         ).scalars().all()

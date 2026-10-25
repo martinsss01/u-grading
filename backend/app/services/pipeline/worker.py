@@ -18,7 +18,7 @@ from app.core.config import settings
 from app.db.session import AsyncSessionLocal
 from app.models.assignment import Assignment
 from app.models.submission import Submission
-from app.services.pipeline.runner import process_submission
+from app.services.pipeline.runner import distribute_if_complete, process_submission
 
 logger = logging.getLogger(__name__)
 
@@ -43,8 +43,11 @@ def latest_per_user(submissions: list[Submission]) -> list[Submission]:
     return list(latest.values())
 
 
-async def queue_assignment(db: AsyncSession, assignment: Assignment, force: bool = False) -> int:
-    """Queue each student's latest submission. Without `force`, finished ones are left alone."""
+async def queue_assignment(
+    db: AsyncSession, assignment: Assignment, force: bool = False, new_only: bool = False
+) -> int:
+    """Queue each student's latest submission. Without `force`, finished ones are left alone;
+    with `new_only`, only ones that never ran (e.g. sent after an early manual run)."""
     assignment.pipeline_started_at = assignment.pipeline_started_at or datetime.now(timezone.utc)
     submissions = (
         await db.execute(select(Submission).where(Submission.assignment_id == assignment.id))
@@ -52,6 +55,8 @@ async def queue_assignment(db: AsyncSession, assignment: Assignment, force: bool
     queued = 0
     for s in latest_per_user(list(submissions)):
         previous = s.pipeline_status
+        if new_only and previous != "not_started":
+            continue
         if previous in ("queued", "processing") or (previous == "done" and not force):
             continue
         s.pipeline_status = "queued"
@@ -63,19 +68,25 @@ async def queue_assignment(db: AsyncSession, assignment: Assignment, force: bool
     return queued
 
 
-async def _enqueue_closed_assignments() -> None:
+async def _process_closed_assignments() -> None:
+    """Queue the submissions of closed, unreleased assignments, then release the ones that are finished."""
     async with AsyncSessionLocal() as db:
         closed = (
             await db.execute(
                 select(Assignment)
-                .where(Assignment.due_date <= datetime.now(timezone.utc), Assignment.pipeline_started_at.is_(None))
+                .where(Assignment.due_date <= datetime.now(timezone.utc), Assignment.released_at.is_(None))
                 .with_for_update(skip_locked=True)
             )
         ).scalars().all()
         for assignment in closed:
-            count = await queue_assignment(db, assignment)
-            logger.info("Assignment %s closed: queued %s submissions", assignment.id, count)
+            count = await queue_assignment(db, assignment, new_only=assignment.pipeline_started_at is not None)
+            if count:
+                logger.info("Assignment %s closed: queued %s submissions", assignment.id, count)
         await db.commit()
+        assignment_ids = [a.id for a in closed]
+    # Covers assignments with no submissions and ones finished by an early manual run.
+    for assignment_id in assignment_ids:
+        await distribute_if_complete(assignment_id)
 
 
 async def _claim(limit: int) -> list[uuid.UUID]:
@@ -110,7 +121,7 @@ async def run_worker() -> None:
     warned_no_key = False
     while True:
         try:
-            await _enqueue_closed_assignments()
+            await _process_closed_assignments()
             if not settings.OPENROUTER_API_KEY:
                 if not warned_no_key:
                     logger.warning("OPENROUTER_API_KEY not set: queued submissions will wait")
