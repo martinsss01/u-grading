@@ -10,10 +10,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RoleBadge } from "@/components/role-badge";
 
-const ROLES = ["Administrador", "Profesor", "Ayudante", "Estudiante"] as const;
+// Users have no role of their own: "Administrador" filters by the admin permission,
+// the rest list users with that role in at least one section.
+const ROLE_FILTERS = [
+  ["Administrador", "Administradores"],
+  ["Profesor", "Profesores"],
+  ["Ayudante", "Ayudantes"],
+  ["Estudiante", "Estudiantes"],
+] as const;
 const ROLE_FILTER_ALL = "Todos";
 
-type User = { id: string; name: string; email: string; role: string; created_at: string };
+type User = { id: string; name: string; email: string; is_admin: boolean; created_at: string };
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -26,7 +33,7 @@ export default function AdminUsersPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<string>("Estudiante");
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -60,7 +67,7 @@ export default function AdminUsersPage() {
     setName("");
     setEmail("");
     setPassword("");
-    setRole("Estudiante");
+    setIsAdmin(false);
     setEditingId(null);
     setError(null);
   }
@@ -79,7 +86,7 @@ export default function AdminUsersPage() {
     setName(u.name);
     setEmail(u.email);
     setPassword("");
-    setRole(u.role);
+    setIsAdmin(u.is_admin);
     setEditingId(u.id);
     setConfirmDeleteId(null);
     setError(null);
@@ -95,11 +102,11 @@ export default function AdminUsersPage() {
     setSubmitting(true);
     try {
       if (editingId) {
-        const payload: Record<string, string> = { name, email, role };
+        const payload: Record<string, string | boolean> = { name, email, is_admin: isAdmin };
         if (password) payload.password = password;
         await api.patch(`/api/v1/users/${editingId}`, payload);
       } else {
-        await api.post("/api/v1/users/", { name, email, password, role });
+        await api.post("/api/v1/users/", { name, email, password, is_admin: isAdmin });
       }
       closeForm();
       await loadUsers();
@@ -177,19 +184,22 @@ export default function AdminUsersPage() {
               />
             </Field>
 
-            <Field>
-              <FieldLabel className="text-white">Rol</FieldLabel>
-              <Select value={role} onValueChange={(v) => setRole(v ?? "Estudiante")}>
-                <SelectTrigger className="w-full rounded-md bg-darkergrey text-white focus-visible:border-red/50 focus-visible:ring-red/20">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ROLES.map((r) => (
-                    <SelectItem key={r} value={r}>{r}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
+            {/* Roles (Profesor/Ayudante/Estudiante) are assigned per section, in "Administrar secciones". */}
+            <label className="flex cursor-pointer items-start gap-3 rounded-md bg-darkergrey px-3 py-2.5">
+              <input
+                type="checkbox"
+                checked={isAdmin}
+                onChange={(e) => setIsAdmin(e.target.checked)}
+                className="mt-0.5 size-4 shrink-0 accent-red"
+              />
+              <span>
+                <span className="block text-sm font-medium text-white">Administrador</span>
+                <span className="block text-xs text-demigrey">
+                  Puede administrar usuarios, cursos y secciones. Los roles de Profesor, Ayudante y Estudiante se
+                  asignan en cada sección.
+                </span>
+              </span>
+            </label>
 
             {error && <P className="text-sm text-red/80">{error}</P>}
 
@@ -231,8 +241,8 @@ export default function AdminUsersPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={ROLE_FILTER_ALL}>Todos</SelectItem>
-                {ROLES.map((r) => (
-                  <SelectItem key={r} value={r}>{r}</SelectItem>
+                {ROLE_FILTERS.map(([value, label]) => (
+                  <SelectItem key={value} value={value}>{label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -254,7 +264,7 @@ export default function AdminUsersPage() {
                       <P className="mt-0.5 truncate text-xs text-demigrey">{u.email}</P>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
-                      <RoleBadge role={u.role} />
+                      {u.is_admin && <RoleBadge role="Administrador" />}
                       <button
                         onClick={() => startEdit(u)}
                         className="text-xs text-demigrey hover:text-white"

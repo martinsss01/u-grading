@@ -19,7 +19,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RoleBadge } from "@/components/role-badge";
 import { RoleIcon } from "@/components/role-icon";
 
-const ROLES = ["Administrador", "Profesor", "Ayudante", "Estudiante"] as const;
+// Administrador is a platform permission, not a role inside a section.
+const ROLES = ["Profesor", "Ayudante", "Estudiante"] as const;
 
 type Course = { id: string; name: string; code: string };
 
@@ -38,7 +39,7 @@ type SectionDetail = {
   members: Member[];
 };
 
-type User = { id: string; name: string; email: string; role: string };
+type User = { id: string; name: string; email: string };
 
 export default function AdminSectionDetailPage() {
   const router = useRouter();
