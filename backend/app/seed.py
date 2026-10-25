@@ -146,7 +146,13 @@ async def seed(data: dict) -> None:
 
     async with AsyncSessionLocal() as db:
         users = {
-            email: User(name=u["name"], email=email, role=u["role"], hashed_password=pw_hash)
+            email: User(
+                name=u["name"],
+                email=email,
+                role=u["role"],
+                is_admin=u["role"] == Role.ADMIN,
+                hashed_password=pw_hash,
+            )
             for email, u in data["users"].items()
         }
         db.add_all(users.values())

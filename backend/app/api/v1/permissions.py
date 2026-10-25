@@ -25,7 +25,7 @@ async def _has_section_role(
     user = await db.get(User, user_id)
     if user is None:
         return False
-    if user.role == Role.ADMIN:
+    if user.is_admin:
         return True
     membership = await db.execute(
         select(SectionMember.id)
@@ -55,7 +55,7 @@ async def section_staff_role(db: AsyncSession, user_id: uuid.UUID | None, sectio
     user = await db.get(User, user_id)
     if user is None:
         return None
-    if user.role == Role.ADMIN:
+    if user.is_admin:
         return Role.ADMIN
     roles = set(
         (

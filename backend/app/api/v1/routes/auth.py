@@ -19,7 +19,9 @@ class LoginResponse(BaseModel):
     id: str
     name: str
     email: str
+    # Deprecated global role, kept until the frontend stops reading it; roles are per section.
     role: str
+    is_admin: bool
 
 
 @router.post("/login", response_model=LoginResponse)
@@ -30,4 +32,6 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
     if not user or not verify_password(body.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciales inválidas")
 
-    return LoginResponse(id=str(user.id), name=user.name, email=user.email, role=user.role.value)
+    return LoginResponse(
+        id=str(user.id), name=user.name, email=user.email, role=user.role.value, is_admin=user.is_admin
+    )

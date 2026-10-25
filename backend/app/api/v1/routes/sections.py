@@ -203,6 +203,8 @@ async def delete_section(section_id: uuid.UUID, db: AsyncSession = Depends(get_d
 async def add_section_member(
     section_id: uuid.UUID, payload: SectionMemberCreate, db: AsyncSession = Depends(get_db)
 ):
+    if payload.role == Role.ADMIN:
+        raise HTTPException(status_code=400, detail="Administrador no es un rol de sección")
     section_result = await db.execute(select(Section).where(Section.id == section_id))
     if section_result.scalar_one_or_none() is None:
         raise HTTPException(status_code=404, detail="Sección no encontrada")
