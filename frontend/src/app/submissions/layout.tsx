@@ -7,11 +7,8 @@ export default function SubmissionsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Global role gates admin-only surfaces (/admin-sections, etc.), but TA
-  // status is per-section (SectionMember.role), so a global-Estudiante user
-  // can still be a TA in some section and needs into /submissions.
   return (
-    <RoleGuard allow={["Ayudante", "Estudiante"]}>
+    <RoleGuard allow={["Ayudante"]}>
       <div className="flex min-h-[calc(100vh-64px)]">
         <Suspense fallback={null}>
           <StudentSidebar />
