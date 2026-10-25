@@ -98,6 +98,7 @@ class ReviewSubmissionRead(SubmissionRead):
     assigned_ta_id: uuid.UUID | None
     assigned_ta_name: str | None
     needs_anonymization_check: bool
+    manual_anonymization_done: bool = False
 
 
 class RedactionCreate(BaseModel):

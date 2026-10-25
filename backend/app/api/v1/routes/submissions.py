@@ -43,6 +43,7 @@ from app.services.colab import ColabFetchError, fetch_colab_notebook
 from app.services.pdf_conversion import build_submission_pdf, read_text, upload_order
 from app.services.pipeline import worker
 from app.services.pipeline.anonymize import build_anonymized_pdf
+from app.services.pipeline.distribute import distribute_assignment
 from app.services.pipeline.identity import identity_regex, identity_terms, replace_with_label
 from app.services.pipeline.worker import latest_per_user
 
@@ -403,6 +404,35 @@ async def mark_anonymization_checked(submission_id: uuid.UUID, user_id: uuid.UUI
     await db.commit()
 
 
+@router.post("/{submission_id}/manual-anonymization", response_model=ReviewSubmissionRead)
+async def confirm_manual_anonymization(submission_id: uuid.UUID, user_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    """A teacher confirms they censored a submission the pipeline failed on, which releases it to a TA."""
+    submission = await _get_submission(db, submission_id)
+    if not await is_assignment_teacher(db, user_id, submission.assignment_id):
+        raise HTTPException(status_code=403, detail="Solo el profesor puede confirmar la anonimización")
+    if submission.pipeline_status != "failed":
+        raise HTTPException(status_code=409, detail="Solo se anonimizan a mano las entregas con fallo de anonimización")
+    has_manual = await db.scalar(
+        select(SubmissionRedaction.id)
+        .where(SubmissionRedaction.submission_id == submission_id, SubmissionRedaction.source == "manual")
+        .limit(1)
+    )
+    if not has_manual:
+        raise HTTPException(status_code=409, detail="Censura al menos el nombre del estudiante antes de confirmar")
+    # Also fails (409) when there is no merged PDF to censor; only "Reintentar" helps then.
+    await _rebuild_anonymized(db, submission_id)
+
+    submission = await _get_submission(db, submission_id)
+    submission.manual_anonymization_done = True
+    submission.needs_anonymization_check = False
+    await db.commit()
+    # Before release, distribute_if_complete shares it out with the rest; after, it goes to the least-loaded TA.
+    assignment = await db.get(Assignment, submission.assignment_id)
+    if assignment.released_at is not None:
+        await distribute_assignment(submission.assignment_id)
+    return review_view(await load_for_review(db, submission_id))
+
+
 @router.get("/files/{file_id}/anonymized")
 async def download_anonymized_file(file_id: uuid.UUID, user_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     """A text/code file with the student's identity replaced, under a neutral name (for TAs)."""
@@ -482,6 +512,7 @@ def review_view(s: Submission) -> ReviewSubmissionRead:
         assigned_ta_id=s.assigned_ta_id,
         assigned_ta_name=s.assigned_ta.name if s.assigned_ta else None,
         needs_anonymization_check=s.needs_anonymization_check,
+        manual_anonymization_done=s.manual_anonymization_done,
     )
 
 
