@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import api from "@/lib/api";
 import { P } from "@/components/ui/p";
 import { RoleIcon } from "@/components/role-icon";
 import { courseCodeLabel } from "@/lib/course";
 import { getCurrentSemester } from "@/lib/semester";
+import { getUserSections, readStoredUser } from "@/lib/user";
 
 type Course = {
   id: string;
@@ -32,56 +32,46 @@ export function StudentSidebar() {
   const { sectionId: activeSectionId } = useParams<{ sectionId?: string }>();
   const [courses, setCourses] = useState<CourseWithSection[]>([]);
   const [taSections, setTaSections] = useState<Section[]>([]);
-  const [globalRole, setGlobalRole] = useState<string | null>(null);
+  // Any Estudiante membership, in any semester: the student pages are gated on it.
+  const [isStudent, setIsStudent] = useState(false);
   const { semester, year } = getCurrentSemester();
 
   useEffect(() => {
-    const raw = localStorage.getItem("user");
-    if (!raw) return;
-    const user = JSON.parse(raw) as { id: string; role?: string };
-    // One-shot read of the logged-in user's role on mount, not a value derived
-    // from render output — the cascading-render concern the rule guards against
-    // doesn't apply here.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setGlobalRole(user.role ?? null);
+    const user = readStoredUser();
+    if (!user) return;
 
-    // A user's role is per-section (SectionMember.role), not global, so the
-    // same account can be a student in some sections and a TA in others —
-    // fetch both and list them side by side.
-    api
-      .get<Section[]>(`/api/v1/sections/student/${user.id}`)
-      .then((res) => {
+    // Roles are per section, so the same account can be a student in some
+    // sections and a TA in others — list both side by side.
+    getUserSections(user.id)
+      .then((memberships) => {
+        setIsStudent(memberships.some((m) => m.role === "Estudiante"));
+        const current = memberships.filter((m) => m.section.semester === semester && m.section.year === year);
+
         const map = new Map<string, CourseWithSection>();
-        for (const s of res.data) {
-          if (s.semester !== semester || s.year !== year) continue;
+        for (const { section: s } of current.filter((m) => m.role === "Estudiante")) {
           if (!map.has(s.course.id)) map.set(s.course.id, { ...s.course, section_number: s.section_number });
         }
         setCourses([...map.values()].sort((a, b) => a.name.localeCompare(b.name)));
-      })
-      .catch(() => setCourses([]));
 
-    api
-      .get<Section[]>(`/api/v1/sections/ta/${user.id}`)
-      .then((res) => {
         // A TA can be assigned to more than one section of the same course, so
         // sort by course name first, then by section number within a course.
-        const current = res.data.filter((s) => s.semester === semester && s.year === year);
-        current.sort((a, b) =>
-          a.course.name.localeCompare(b.course.name) || a.section_number - b.section_number
-        );
-        setTaSections(current);
+        const ta = current.filter((m) => m.role === "Ayudante").map((m) => m.section);
+        ta.sort((a, b) => a.course.name.localeCompare(b.course.name) || a.section_number - b.section_number);
+        setTaSections(ta);
       })
-      .catch(() => setTaSections([]));
+      .catch(() => {
+        setCourses([]);
+        setTaSections([]);
+      });
   }, [semester, year]);
 
   return (
     <aside className="w-56 shrink-0 border-r border-grey/30 bg-darkergrey px-4 py-6">
-      {(globalRole === "Estudiante" || taSections.length > 0) && (
+      {(isStudent || taSections.length > 0) && (
         <nav className="space-y-1">
-          {/* The student-only pages these link to are gated by global role, so
-              an account that is a TA only (global role Ayudante, e.g. reached
-              here straight from /submissions) would just 404 on them. */}
-          {globalRole === "Estudiante" && (
+          {/* The student pages these link to need an Estudiante membership,
+              so a TA-only account (e.g. reached here from /submissions) would 404 on them. */}
+          {isStudent && (
             <>
               <button
                 onClick={() => router.push("/student-calendar")}

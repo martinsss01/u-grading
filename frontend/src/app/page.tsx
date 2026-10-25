@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import api from "@/lib/api";
+import { type StoredUser, getUserSections, startPage, userAreas } from "@/lib/user";
 import { Button } from "@/components/ui/button";
 import { P } from "@/components/ui/p";
 import { Field, FieldLabel } from "@/components/ui/field";
@@ -21,14 +22,10 @@ export default function Home() {
     setError(null);
     setLoading(true);
     try {
-      const { data } = await api.post("/api/v1/auth/login", { email, password });
+      const { data } = await api.post<StoredUser>("/api/v1/auth/login", { email, password });
       localStorage.setItem("user", JSON.stringify(data));
-      const dest =
-        data.role === "Estudiante"    ? "/student-assignments" :
-        data.role === "Ayudante"      ? "/submissions" :
-        data.role === "Administrador" ? "/admin-sections" :
-        "/assignments";
-      router.push(dest);
+      // Roles are per section: go straight to the user's area, or let them pick on /home.
+      router.push(startPage(userAreas(data, await getUserSections(data.id))));
     } catch {
       setError("Email o contraseña equivocadas.");
     } finally {

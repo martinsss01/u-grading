@@ -66,7 +66,6 @@ export default function StudentCoursesPage() {
   const [sections, setSections] = useState<Section[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [role, setRole] = useState<string>("Estudiante");
   const [semesterFilter, setSemesterFilter] = useState<string[]>([]);
 
   useEffect(() => {
@@ -75,12 +74,7 @@ export default function StudentCoursesPage() {
       router.push("/");
       return;
     }
-    const user = JSON.parse(raw) as { id: string; role?: string };
-    // One-shot read of the logged-in user's role on mount, not a value derived
-    // from render output — the cascading-render concern the rule guards against
-    // doesn't apply here.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (user.role) setRole(user.role);
+    const user = JSON.parse(raw) as { id: string };
 
     api
       .get<Section[]>(`/api/v1/sections/student/${user.id}`)
@@ -173,7 +167,8 @@ export default function StudentCoursesPage() {
                     className="group flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-darkergrey/50"
                   >
                     <div className="flex items-center gap-3">
-                      <RoleIcon role={role} className="size-6 shrink-0 object-contain" />
+                      {/* These are the sections where the user is a student. */}
+                      <RoleIcon role="Estudiante" className="size-6 shrink-0 object-contain" />
                       <div>
                         <P className="font-medium text-white">{s.course.name}</P>
                         <P className="mt-0.5 text-xs text-demigrey">{courseCodeLabel(s.course, s.section_number)}</P>

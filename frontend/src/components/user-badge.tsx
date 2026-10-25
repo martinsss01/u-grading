@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -25,12 +26,13 @@ export function UserBadge() {
 
   const initial = name.trim().charAt(0).toUpperCase();
 
+  // Links to /home, where users with several areas switch between them; everyone else is sent on to their start page.
   return (
-    <div className="flex items-center gap-2">
+    <Link href="/home" className="flex items-center gap-2 rounded-md transition-opacity hover:opacity-80" title="Inicio">
       <span className="flex h-8 w-8 items-center justify-center rounded-full bg-red text-sm font-semibold text-white">
         {initial}
       </span>
       <span className="text-sm text-white">{name}</span>
-    </div>
+    </Link>
   );
 }
